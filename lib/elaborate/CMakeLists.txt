@@ -1,4 +1,5 @@
 add_library(elaborate
+  syntax.cpp
   table.cpp
   elab.cpp)
 target_compile_features(elaborate PRIVATE cxx_std_23)
