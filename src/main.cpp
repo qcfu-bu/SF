@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     elaborate::Table table = table_builder.build();
 
     elaborate::Elaborator elaborator(table);
-    auto pkg_elab = elaborator.elaborate(pkg);
+    auto pkg_elab = elaborator.elab(pkg);
 
     std::println("{}", pkg);
 

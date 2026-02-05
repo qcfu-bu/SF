@@ -19,7 +19,7 @@ static std::string indent_str(int indent) {
 
 // Format type arguments
 static std::string
-format_type_args(const std::optional<std::vector<std::unique_ptr<Type>>>& type_args) {
+format_type_args(const std::optional<std::vector<std::shared_ptr<Type>>>& type_args) {
     if (!type_args.has_value() || type_args->empty()) {
         return "";
     }
@@ -164,7 +164,6 @@ std::string format_pat(const Pat& pat) {
                 result += "mut ";
             }
             result += "%" + p.ident;
-            result += format_type_args(p.type_args);
             if (p.hint && p.hint->get_kind() != Type::Kind::Meta) {
                 result += ": " + format_type(*p.hint);
             }
