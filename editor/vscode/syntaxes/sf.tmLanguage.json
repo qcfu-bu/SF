@@ -1,0 +1,418 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SF",
+  "scopeName": "source.sf",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#attributes"
+    },
+    {
+      "include": "#imports"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#constants"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.sf",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.sf",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.sf",
+          "match": "\\b(if|else|for|in|while|switch|case|default|return|break|continue)\\b"
+        },
+        {
+          "name": "keyword.declaration.sf",
+          "match": "\\b(package|class|enum|module|func|init|type|interface|extension|where|let|var|mut|private|public|static|new|open)\\b"
+        },
+        {
+          "name": "storage.modifier.sf",
+          "match": "\\b(private|public|static|mut)\\b"
+        }
+      ]
+    },
+    "attributes": {
+      "patterns": [
+        {
+          "name": "meta.attribute.sf",
+          "begin": "(@\\w+)(\\()",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": {
+              "name": "entity.name.function.decorator.sf"
+            },
+            "2": {
+              "name": "punctuation.brackets.sf"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.brackets.sf"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#keywords"
+            },
+            {
+              "include": "#types"
+            },
+            {
+              "include": "#constants"
+            },
+            {
+              "include": "#operators"
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        },
+        {
+          "name": "entity.name.function.decorator.sf",
+          "match": "@\\w+"
+        }
+      ]
+    },
+    "imports": {
+      "patterns": [
+        {
+          "name": "keyword.control.import.sf",
+          "match": "\\b(import|as)\\b"
+        },
+        {
+          "name": "meta.import.sf",
+          "begin": "\\b(import)\\s+",
+          "end": ";",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.import.sf"
+            }
+          },
+          "patterns": [
+            {
+              "name": "entity.name.namespace.sf",
+              "match": "[a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*"
+            },
+            {
+              "name": "keyword.control.import.sf",
+              "match": "\\b(as)\\b"
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.sf",
+          "match": "\\b(Int|Float|Double|Bool|String|Char|Void)\\b"
+        },
+        {
+          "comment": "Generic type with type arguments, e.g., List<Int>",
+          "name": "meta.generic-type.sf",
+          "begin": "\\b([A-Z][a-zA-Z0-9_]*)(<)",
+          "end": ">",
+          "beginCaptures": {
+            "1": {
+              "name": "entity.name.type.sf"
+            },
+            "2": {
+              "name": "punctuation.definition.generic.begin.sf"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.generic.end.sf"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#types"
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        },
+        {
+          "name": "entity.name.type.sf",
+          "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "meta.function.sf",
+          "begin": "\\b(func|init)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "end": "(?<=\\})|(?=;)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.declaration.sf"
+            },
+            "2": {
+              "name": "entity.name.function.sf"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#generic-parameters"
+            },
+            {
+              "include": "#parameters"
+            },
+            {
+              "include": "#return-type"
+            },
+            {
+              "include": "#function-body"
+            }
+          ]
+        },
+        {
+          "comment": "Generic function call, e.g., fact<A>(n - 1)",
+          "name": "meta.function-call.generic.sf",
+          "begin": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(<)",
+          "end": ">\\s*(?=\\()",
+          "beginCaptures": {
+            "1": {
+              "name": "entity.name.function.sf"
+            },
+            "2": {
+              "name": "punctuation.definition.generic.begin.sf"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#types"
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        },
+        {
+          "name": "meta.function-call.sf",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.sf"
+            }
+          }
+        }
+      ]
+    },
+    "generic-parameters": {
+      "patterns": [
+        {
+          "name": "meta.generic-parameters.sf",
+          "begin": "<",
+          "end": ">",
+          "patterns": [
+            {
+              "name": "variable.parameter.type.sf",
+              "match": "[A-Z][a-zA-Z0-9_]*"
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        }
+      ]
+    },
+    "parameters": {
+      "patterns": [
+        {
+          "name": "meta.parameters.sf",
+          "begin": "\\(",
+          "end": "\\)",
+          "patterns": [
+            {
+              "name": "variable.parameter.sf",
+              "match": "[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*:)"
+            },
+            {
+              "include": "#types"
+            },
+            {
+              "include": "#punctuation"
+            },
+            {
+              "include": "#operators"
+            }
+          ]
+        }
+      ]
+    },
+    "return-type": {
+      "patterns": [
+        {
+          "name": "meta.return-type.sf",
+          "begin": "->",
+          "end": "(?=\\{|;)",
+          "beginCaptures": {
+            "0": {
+              "name": "keyword.operator.arrow.sf"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#types"
+            }
+          ]
+        }
+      ]
+    },
+    "function-body": {
+      "patterns": [
+        {
+          "name": "meta.block.sf",
+          "begin": "\\{",
+          "end": "\\}",
+          "patterns": [
+            {
+              "include": "$self"
+            }
+          ]
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.sf",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.sf",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.sf",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.sf",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.sf",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.sf",
+          "match": "\\b0[bB][01]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.sf",
+          "match": "\\b[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.sf",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arrow.sf",
+          "match": "->|=>"
+        },
+        {
+          "name": "keyword.operator.comparison.sf",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.logical.sf",
+          "match": "&&|\\|\\||!"
+        },
+        {
+          "name": "keyword.operator.assignment.sf",
+          "match": "=|\\+=|-=|\\*=|/=|%="
+        },
+        {
+          "name": "keyword.operator.arithmetic.sf",
+          "match": "\\+|-|\\*|/|%"
+        },
+        {
+          "name": "keyword.operator.type.sf",
+          "match": ":"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.sf",
+          "match": "\\b(true|false|nil|self|Self)\\b"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.sf",
+          "match": "[,;]"
+        },
+        {
+          "name": "punctuation.brackets.sf",
+          "match": "[\\[\\]\\{\\}\\(\\)]"
+        }
+      ]
+    }
+  }
+}

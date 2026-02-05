@@ -1,0 +1,597 @@
+// Parsed successfully.
+/* Initial AST:
+package "examples/test00.sf" {
+import math;
+module Core {
+    interface Functor {
+        type Self<A>;
+        func map<A, B>(%x: Self<A>, %f: A -> B) -> Self<B>;
+    }
+    interface Monad {
+        type Self<A>;
+        func pure<A>(%x: A) -> Self<A>;
+        func bind<A, B>(%self: Self<A>, %f: A -> Self<B>) -> Self<B>;
+    }
+    extension<M> M: Functor where M: Monad {
+        type Self<A> = M.Self<A>;
+        func map<A, B>(%x: Self<A>, %f: A -> B) -> Self<B> {
+            x.bind(%a => pure(f(a)))
+        }
+    }
+    enum Option<T> {
+        case None
+        case Some(T)
+    }
+    extension<A> Option<A>: Monad where A: Functor {
+        type Self<A> = Option<A>;
+        func pure<A>(%x: A) {
+            Some(x)
+        }
+        func bind<A, B>(%self: Option<A>, %f: A -> Option<B>) -> Option<B> {
+            switch self {
+                case Some(%x): {
+                    print("some case");
+                    return f(x)
+                }
+                default: {
+                    print("default case");
+                    return None
+                }
+            }
+        }
+    }
+    interface Index<T> {
+        type Self<T>;
+        func index(%self: Self<T>, %x: Int) -> T;
+    }
+    interface Update<T> {
+        type Self<T>;
+        func update(%self: Self<T>, %x: Int, %value: T);
+    }
+    @extern("fy_array_t")
+    class Array<T> {
+    }
+    extension<T> Array<T>: Index<T> {
+        type Self<T> = Array<T>;
+        @extern("fy_array_index")
+        func index(%self: Array<A>, %x: Int) -> A;
+    }
+    extension<T> Array<T>: Update<T> {
+        type Self<T> = Array<T>;
+        @extern("fy_array_update")
+        func update(%self: Array<T>, %x: Int, %value: T);
+    }
+    class Vec<T> {
+        private let mut %data: Array<T> = data;
+        private let mut %capacity: Int = capacity;
+        private let mut %len: Int = len;
+        init(%self) {
+            self.data = Array(0);
+            self.capacity = 0;
+            self.len = 0;
+        }
+        init(%self, %capacity: Int) {
+            self.data = Array(capacity);
+            self.capacity = capacity;
+            self.len = 0;
+        }
+        func len(%self: Vec<T>) -> Int {
+            self.len
+        }
+        func push(%self: Vec<T>, %value: T) {
+            if self.len >= self.capacity {
+                let %new_capacity = if self.capacity == 0 {
+                    4
+                } else if ok {
+                    self.capacity * 2
+                };
+                let %new_data = Array(new_capacity);
+                for %i in range(0, self.len) {
+                    new_data[i] = self.data[i];
+                }
+                self.data = new_data;
+                self.capacity = new_capacity;
+            }
+            self.data[self.len] = value;
+            self.len += 1;
+        }
+    }
+    interface Into<A> {
+        type Self;
+        func into(%self: Self) -> A;
+    }
+    interface From<A> {
+        type Self;
+        func from(%x: A) -> Self;
+    }
+    extension<A, B> A: Into<B> where B: From<A> {
+        open Option.*;
+        type Self = A;
+        func into(%self: Self) -> B {
+            B.from(self)
+        }
+    }
+}
+}
+*/
+/* Constant table built successfully.
+Module examples/test00.sf
+    Module Core
+        types:
+            Array: Public Class examples/test00.sf.Core.Array
+            From: Public Interface examples/test00.sf.Core.From
+            Functor: Public Interface examples/test00.sf.Core.Functor
+            Index: Public Interface examples/test00.sf.Core.Index
+            Into: Public Interface examples/test00.sf.Core.Into
+            Monad: Public Interface examples/test00.sf.Core.Monad
+            Option: Public Enum examples/test00.sf.Core.Option
+            Update: Public Interface examples/test00.sf.Core.Update
+            Vec: Public Class examples/test00.sf.Core.Vec
+        exprs:
+            ext%0: Public Extension examples/test00.sf.Core.ext%0
+            ext%1: Public Extension examples/test00.sf.Core.ext%1
+            ext%2: Public Extension examples/test00.sf.Core.ext%2
+            ext%3: Public Extension examples/test00.sf.Core.ext%3
+            ext%4: Public Extension examples/test00.sf.Core.ext%4
+        Class Array
+        Interface From
+            types:
+                Self: Public Typealias examples/test00.sf.Core.From.Self
+            exprs:
+                from: Public Func examples/test00.sf.Core.From.from
+        Interface Functor
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Functor.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.Functor.map
+        Interface Index
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Index.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.Index.index
+        Interface Into
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Into.Self
+            exprs:
+                into: Public Func examples/test00.sf.Core.Into.into
+        Interface Monad
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Monad.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.Monad.bind
+                pure: Public Func examples/test00.sf.Core.Monad.pure
+        Enum Option
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+        Interface Update
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Update.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.Update.update
+        Class Vec
+            exprs:
+                init%0: Public Init examples/test00.sf.Core.Vec.init%0
+                init%1: Public Init examples/test00.sf.Core.Vec.init%1
+                len: Public Func examples/test00.sf.Core.Vec.len
+                push: Public Func examples/test00.sf.Core.Vec.push
+        Extension ext%0
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%0.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.ext%0.map
+        Extension ext%1
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%1.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.ext%1.bind
+                pure: Public Func examples/test00.sf.Core.ext%1.pure
+        Extension ext%2
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%2.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.ext%2.index
+        Extension ext%3
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%3.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.ext%3.update
+        Extension ext%4
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%4.Self
+            exprs:
+                into: Public Func examples/test00.sf.Core.ext%4.into
+
+*/
+/* Constant table merged successfully.
+Module examples/test00.sf
+    Module Core
+        types:
+            Array: Public Class examples/test00.sf.Core.Array
+            From: Public Interface examples/test00.sf.Core.From
+            Functor: Public Interface examples/test00.sf.Core.Functor
+            Index: Public Interface examples/test00.sf.Core.Index
+            Into: Public Interface examples/test00.sf.Core.Into
+            Monad: Public Interface examples/test00.sf.Core.Monad
+            Option: Public Enum examples/test00.sf.Core.Option
+            Update: Public Interface examples/test00.sf.Core.Update
+            Vec: Public Class examples/test00.sf.Core.Vec
+        exprs:
+            ext%0: Public Extension examples/test00.sf.Core.ext%0
+            ext%1: Public Extension examples/test00.sf.Core.ext%1
+            ext%2: Public Extension examples/test00.sf.Core.ext%2
+            ext%3: Public Extension examples/test00.sf.Core.ext%3
+            ext%4: Public Extension examples/test00.sf.Core.ext%4
+        Class Array
+        Interface From
+            types:
+                Self: Public Typealias examples/test00.sf.Core.From.Self
+            exprs:
+                from: Public Func examples/test00.sf.Core.From.from
+        Interface Functor
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Functor.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.Functor.map
+        Interface Index
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Index.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.Index.index
+        Interface Into
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Into.Self
+            exprs:
+                into: Public Func examples/test00.sf.Core.Into.into
+        Interface Monad
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Monad.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.Monad.bind
+                pure: Public Func examples/test00.sf.Core.Monad.pure
+        Enum Option
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+        Interface Update
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Update.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.Update.update
+        Class Vec
+            exprs:
+                init%0: Public Init examples/test00.sf.Core.Vec.init%0
+                init%1: Public Init examples/test00.sf.Core.Vec.init%1
+                len: Public Func examples/test00.sf.Core.Vec.len
+                push: Public Func examples/test00.sf.Core.Vec.push
+        Extension ext%0
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%0.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.ext%0.map
+        Extension ext%1
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%1.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.ext%1.bind
+                pure: Public Func examples/test00.sf.Core.ext%1.pure
+        Extension ext%2
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%2.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.ext%2.index
+        Extension ext%3
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%3.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.ext%3.update
+        Extension ext%4
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%4.Self
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+                into: Public Func examples/test00.sf.Core.ext%4.into
+
+*/
+/* Variable table built successfully.
+Module examples/test00.sf
+    Module Core
+        types:
+            Array: Public Class examples/test00.sf.Core.Array
+            From: Public Interface examples/test00.sf.Core.From
+            Functor: Public Interface examples/test00.sf.Core.Functor
+            Index: Public Interface examples/test00.sf.Core.Index
+            Into: Public Interface examples/test00.sf.Core.Into
+            Monad: Public Interface examples/test00.sf.Core.Monad
+            Option: Public Enum examples/test00.sf.Core.Option
+            Update: Public Interface examples/test00.sf.Core.Update
+            Vec: Public Class examples/test00.sf.Core.Vec
+        exprs:
+            ext%0: Public Extension examples/test00.sf.Core.ext%0
+            ext%1: Public Extension examples/test00.sf.Core.ext%1
+            ext%2: Public Extension examples/test00.sf.Core.ext%2
+            ext%3: Public Extension examples/test00.sf.Core.ext%3
+            ext%4: Public Extension examples/test00.sf.Core.ext%4
+        Class Array
+        Interface From
+            types:
+                Self: Public Typealias examples/test00.sf.Core.From.Self
+            exprs:
+                from: Public Func examples/test00.sf.Core.From.from
+        Interface Functor
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Functor.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.Functor.map
+        Interface Index
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Index.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.Index.index
+        Interface Into
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Into.Self
+            exprs:
+                into: Public Func examples/test00.sf.Core.Into.into
+        Interface Monad
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Monad.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.Monad.bind
+                pure: Public Func examples/test00.sf.Core.Monad.pure
+        Enum Option
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+        Interface Update
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Update.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.Update.update
+        Class Vec
+            exprs:
+                capacity: Private Var examples/test00.sf.Core.Vec.capacity
+                data: Private Var examples/test00.sf.Core.Vec.data
+                init%0: Public Init examples/test00.sf.Core.Vec.init%0
+                init%1: Public Init examples/test00.sf.Core.Vec.init%1
+                len: Public Func examples/test00.sf.Core.Vec.len
+                len: Private Var examples/test00.sf.Core.Vec.len
+                push: Public Func examples/test00.sf.Core.Vec.push
+        Extension ext%0
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%0.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.ext%0.map
+        Extension ext%1
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%1.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.ext%1.bind
+                pure: Public Func examples/test00.sf.Core.ext%1.pure
+        Extension ext%2
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%2.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.ext%2.index
+        Extension ext%3
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%3.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.ext%3.update
+        Extension ext%4
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%4.Self
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+                into: Public Func examples/test00.sf.Core.ext%4.into
+
+*/
+/* Variable table merged successfully.
+Module examples/test00.sf
+    Module Core
+        types:
+            Array: Public Class examples/test00.sf.Core.Array
+            From: Public Interface examples/test00.sf.Core.From
+            Functor: Public Interface examples/test00.sf.Core.Functor
+            Index: Public Interface examples/test00.sf.Core.Index
+            Into: Public Interface examples/test00.sf.Core.Into
+            Monad: Public Interface examples/test00.sf.Core.Monad
+            Option: Public Enum examples/test00.sf.Core.Option
+            Update: Public Interface examples/test00.sf.Core.Update
+            Vec: Public Class examples/test00.sf.Core.Vec
+        exprs:
+            ext%0: Public Extension examples/test00.sf.Core.ext%0
+            ext%1: Public Extension examples/test00.sf.Core.ext%1
+            ext%2: Public Extension examples/test00.sf.Core.ext%2
+            ext%3: Public Extension examples/test00.sf.Core.ext%3
+            ext%4: Public Extension examples/test00.sf.Core.ext%4
+        Class Array
+        Interface From
+            types:
+                Self: Public Typealias examples/test00.sf.Core.From.Self
+            exprs:
+                from: Public Func examples/test00.sf.Core.From.from
+        Interface Functor
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Functor.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.Functor.map
+        Interface Index
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Index.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.Index.index
+        Interface Into
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Into.Self
+            exprs:
+                into: Public Func examples/test00.sf.Core.Into.into
+        Interface Monad
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Monad.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.Monad.bind
+                pure: Public Func examples/test00.sf.Core.Monad.pure
+        Enum Option
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+        Interface Update
+            types:
+                Self: Public Typealias examples/test00.sf.Core.Update.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.Update.update
+        Class Vec
+            exprs:
+                capacity: Private Var examples/test00.sf.Core.Vec.capacity
+                data: Private Var examples/test00.sf.Core.Vec.data
+                init%0: Public Init examples/test00.sf.Core.Vec.init%0
+                init%1: Public Init examples/test00.sf.Core.Vec.init%1
+                len: Public Func examples/test00.sf.Core.Vec.len
+                len: Private Var examples/test00.sf.Core.Vec.len
+                push: Public Func examples/test00.sf.Core.Vec.push
+        Extension ext%0
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%0.Self
+            exprs:
+                map: Public Func examples/test00.sf.Core.ext%0.map
+        Extension ext%1
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%1.Self
+            exprs:
+                bind: Public Func examples/test00.sf.Core.ext%1.bind
+                pure: Public Func examples/test00.sf.Core.ext%1.pure
+        Extension ext%2
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%2.Self
+            exprs:
+                index: Public Func examples/test00.sf.Core.ext%2.index
+        Extension ext%3
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%3.Self
+            exprs:
+                update: Public Func examples/test00.sf.Core.ext%3.update
+        Extension ext%4
+            types:
+                Self: Public Typealias examples/test00.sf.Core.ext%4.Self
+            exprs:
+                None: Public Ctor examples/test00.sf.Core.Option.None
+                Some: Public Ctor examples/test00.sf.Core.Option.Some
+                into: Public Func examples/test00.sf.Core.ext%4.into
+
+*/
+package "examples/test00.sf" {
+import math;
+module Core {
+    interface Functor {
+        type Self<A>;
+        func map<A, B>(%x: Self<A>, %f: A -> B) -> Self<B>;
+    }
+    interface Monad {
+        type Self<A>;
+        func pure<A>(%x: A) -> Self<A>;
+        func bind<A, B>(%self: Self<A>, %f: A -> Self<B>) -> Self<B>;
+    }
+    extension<M> ext%0 M: Functor where M: Monad {
+        type Self<A> = M.Self<A>;
+        func map<A, B>(%x: Self<A>, %f: A -> B) -> Self<B> {
+            x.bind(%a => pure(f(a)))
+        }
+    }
+    enum Option<T> {
+        case None
+        case Some(T)
+    }
+    extension<A> ext%1 Option<A>: Monad where A: Functor {
+        type Self<A> = Option<A>;
+        func pure<A>(%x: A) {
+            Some(x)
+        }
+        func bind<A, B>(%self: Option<A>, %f: A -> Option<B>) -> Option<B> {
+            switch self {
+                case Some(%x): {
+                    print("some case");
+                    return f(x)
+                }
+                default: {
+                    print("default case");
+                    return None
+                }
+            }
+        }
+    }
+    interface Index<T> {
+        type Self<T>;
+        func index(%self: Self<T>, %x: Int) -> T;
+    }
+    interface Update<T> {
+        type Self<T>;
+        func update(%self: Self<T>, %x: Int, %value: T);
+    }
+    @extern("fy_array_t")
+    class Array<T> {
+    }
+    extension<T> ext%2 Array<T>: Index<T> {
+        type Self<T> = Array<T>;
+        @extern("fy_array_index")
+        func index(%self: Array<A>, %x: Int) -> A;
+    }
+    extension<T> ext%3 Array<T>: Update<T> {
+        type Self<T> = Array<T>;
+        @extern("fy_array_update")
+        func update(%self: Array<T>, %x: Int, %value: T);
+    }
+    class Vec<T> {
+        private let mut %data: Array<T> = data;
+        private let mut %capacity: Int = capacity;
+        private let mut %len: Int = len;
+        init init%0(%self) {
+            self.data = Array(0);
+            self.capacity = 0;
+            self.len = 0;
+        }
+        init init%1(%self, %capacity: Int) {
+            self.data = Array(capacity);
+            self.capacity = capacity;
+            self.len = 0;
+        }
+        func len(%self: Vec<T>) -> Int {
+            self.len
+        }
+        func push(%self: Vec<T>, %value: T) {
+            if self.len >= self.capacity {
+                let %new_capacity = if self.capacity == 0 {
+                    4
+                } else if ok {
+                    self.capacity * 2
+                };
+                let %new_data = Array(new_capacity);
+                for %i in range(0, self.len) {
+                    new_data[i] = self.data[i];
+                }
+                self.data = new_data;
+                self.capacity = new_capacity;
+            }
+            self.data[self.len] = value;
+            self.len += 1;
+        }
+    }
+    interface Into<A> {
+        type Self;
+        func into(%self: Self) -> A;
+    }
+    interface From<A> {
+        type Self;
+        func from(%x: A) -> Self;
+    }
+    extension<A, B> ext%4 A: Into<B> where B: From<A> {
+        open Option.*;
+        type Self = A;
+        func into(%self: Self) -> B {
+            B.from(self)
+        }
+    }
+}
+}

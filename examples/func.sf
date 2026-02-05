@@ -1,0 +1,14 @@
+@abstract
+func fact<A: D + B>(n: Int) -> Int where A: C {
+    if (n < 0) {
+        error("Negative input not allowed")
+    } else if (n == 0) {
+        return 1
+    } else {
+        return n * fact<A>(n - 1)
+    }
+    switch n {
+    case 0: 1
+    default: n * fact<A>(n - 1)
+    }
+}

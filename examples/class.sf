@@ -1,0 +1,19 @@
+module Core {
+
+enum Option<T> {
+    case None
+    case Some(T)
+}
+
+class Vec<T> {
+    let mut capacity: Int = capacity;
+    let mut len: Int = len;
+
+    init(capacity: Int) -> Vec<T> {
+        return Vec<T>(Option.None, capacity, 0);
+    }
+}
+
+open Vec.{*, len as LEN};
+
+}

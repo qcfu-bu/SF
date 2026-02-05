@@ -1,0 +1,28 @@
+enum List<T> {
+    case Empty
+    case Cons(T, List<T>)
+
+    func length(self: List<T>) -> Int {
+        if self == Empty {
+            return 0
+        } else if case Cons(_, let tail) = self {
+            return 1 + tail.length()
+        }
+        switch self {
+        case Empty: 0
+        case Cons(_, tail): 1 + tail.length()
+        }
+    }
+
+    func fact<A: D + B>(n: Int) -> Int where A: C {
+        if n < 0 {
+            error("Negative input not allowed")
+        }
+        switch n {
+        case 0: return 1
+        default: return n * fact<A>(n - 1)
+        }
+    }
+}
+
+open List.{*, Cons as _};
