@@ -501,11 +501,18 @@ struct OpenStmt: public Stmt {
 struct LetStmt: public Stmt {
     std::unique_ptr<Pat> pat;
     std::unique_ptr<Expr> expr;
+    std::optional<std::unique_ptr<Expr>> else_branch;
 
-    LetStmt(std::unique_ptr<Pat> pat, std::unique_ptr<Expr> expr, Span span):
+    LetStmt(
+        std::unique_ptr<Pat> pat,
+        std::unique_ptr<Expr> expr,
+        std::optional<std::unique_ptr<Expr>> else_branch,
+        Span span
+    ):
         Stmt(Kind::Let, span),
         pat(std::move(pat)),
-        expr(std::move(expr)) {}
+        expr(std::move(expr)),
+        else_branch(std::move(else_branch)) {}
 };
 
 struct FuncStmt: public Stmt {
@@ -951,11 +958,11 @@ struct ExprCond: public Cond {
         expr(std::move(expr)) {}
 };
 
-struct CaseCond: public Cond {
+struct PatCond: public Cond {
     std::unique_ptr<Pat> pat;
     std::unique_ptr<Expr> expr;
 
-    CaseCond(std::unique_ptr<Pat> pat, std::unique_ptr<Expr> expr, Span span):
+    PatCond(std::unique_ptr<Pat> pat, std::unique_ptr<Expr> expr, Span span):
         Cond(Kind::Case, span),
         pat(std::move(pat)),
         expr(std::move(expr)) {}

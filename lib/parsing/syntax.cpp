@@ -288,8 +288,8 @@ std::string format_cond(const Cond& cond) {
         case Cond::Kind::Expr:
             return format_expr(*static_cast<const ExprCond&>(cond).expr);
         case Cond::Kind::Case: {
-            const auto& c = static_cast<const CaseCond&>(cond);
-            return "case " + format_pat(*c.pat) + " = " + format_expr(*c.expr);
+            const auto& c = static_cast<const PatCond&>(cond);
+            return "let " + format_pat(*c.pat) + " = " + format_expr(*c.expr);
         }
     }
     return "<?cond>";
@@ -646,7 +646,11 @@ std::string format_stmt(const Stmt& stmt, int indent) {
         }
         case Stmt::Kind::Let: {
             const auto& s = static_cast<const LetStmt&>(stmt);
-            result += "let " + format_pat(*s.pat) + " = " + format_expr(*s.expr, indent) + ";";
+            result += "let " + format_pat(*s.pat) + " = " + format_expr(*s.expr, indent);
+            if (s.else_branch) {
+                result += " else " + format_expr(**s.else_branch, indent);
+            }
+            result += ";";
             break;
         }
         case Stmt::Kind::Func: {

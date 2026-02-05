@@ -1,0 +1,13 @@
+
+func foo() {
+   let Some(x) = ok else {
+      bar(); 
+   };
+   if let Some(x) = ok {
+      bar(); 
+   } else if Some(x) = ok {
+      baz() 
+   } else {
+      blue;
+   };
+}

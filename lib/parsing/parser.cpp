@@ -428,12 +428,12 @@ std::unique_ptr<Expr> Parser::parse_lam_expr() {
 
 std::unique_ptr<Cond> Parser::parse_cond() {
     auto start = start_loc();
-    if (peek() == Token::Kind::Case) {
-        next(); // consume 'case'
+    if (peek() == Token::Kind::Let) {
+        next(); // consume 'let'
         auto pat = parse_pat();
         expect(Token::Kind::Eq); // consume '='
         auto expr = parse_expr();
-        return std::make_unique<CaseCond>(std::move(pat), std::move(expr), make_span(start));
+        return std::make_unique<PatCond>(std::move(pat), std::move(expr), make_span(start));
     } else {
         auto expr = parse_expr();
         return std::make_unique<ExprCond>(std::move(expr), make_span(start));
@@ -445,7 +445,7 @@ std::unique_ptr<Expr> Parser::parse_ite_expr() {
     expect(Token::Kind::If); // consume 'if'
     std::vector<IteThen> then_branches;
     auto cond = parse_cond();
-    auto then_branch = parse_expr();
+    auto then_branch = parse_block_expr();
     then_branches.push_back({ std::move(cond), std::move(then_branch) });
 
     // optional else branch
@@ -454,12 +454,12 @@ std::unique_ptr<Expr> Parser::parse_ite_expr() {
         next(); // consume 'else'
         if (peek() == Token::Kind::If) {
             next(); // consume 'if'
-            auto new_cond = parse_cond();
-            auto new_then_branch = parse_expr();
-            then_branches.push_back({ std::move(new_cond), std::move(new_then_branch) });
+            auto cond = parse_cond();
+            auto then_branch = parse_block_expr();
+            then_branches.push_back({ std::move(cond), std::move(then_branch) });
             continue;
         }
-        else_branch = parse_expr();
+        else_branch = parse_block_expr();
     }
 
     return std::make_unique<IteExpr>(
@@ -918,7 +918,17 @@ std::unique_ptr<Stmt> Parser::parse_let_stmt() {
     if (token == Token::Kind::Eq) {
         next(); // consume '='
         auto expr = parse_expr();
-        stmt = std::make_unique<LetStmt>(std::move(pat), std::move(expr), make_span(start));
+        std::optional<std::unique_ptr<Expr>> else_expr;
+        if (peek() == Token::Kind::Else) {
+            next(); // consume 'else'
+            else_expr = parse_block_expr();
+        }
+        stmt = std::make_unique<LetStmt>(
+            std::move(pat),
+            std::move(expr),
+            std::move(else_expr),
+            make_span(start)
+        );
     } else if (token == Token::Kind::LArrow) {
         next(); // consume '<-'
         auto expr = parse_expr();
