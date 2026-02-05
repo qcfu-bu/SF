@@ -58,7 +58,7 @@
     # suggesting constructs that require C++20. Prefer base::Reversed.
     # TODO(crbug.com/1404958): remove these once C++20 is everywhere.
     - key:          modernize-loop-convert.MakeReverseRangeFunction
-      value:        std::view::reverse
+      value:        std::views::reverse
     - key:          modernize-loop-convert.MakeReverseRangeHeader
       value:        <ranges>
     - { key: readability-identifier-naming.ClassCase,           value: CamelCase  }

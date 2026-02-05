@@ -49,6 +49,7 @@ struct Type {
         Char,
         String,
         Unit,
+        Var,
         Enum,
         Class,
         Typealias,
@@ -215,7 +216,7 @@ struct Stmt {
         Expr,
     };
 
-    std::vector<std::unique_ptr<Expr>> attrs;
+    std::vector<std::shared_ptr<Expr>> attrs;
 
     Stmt(Kind kind, Span span): kind(kind), span(span) {}
     virtual ~Stmt() = default;
@@ -247,7 +248,7 @@ struct Decl {
         Ctor,
     };
 
-    std::vector<std::unique_ptr<Expr>> attrs;
+    std::vector<std::shared_ptr<Expr>> attrs;
     Access access = Access::Public;
 
     Decl(Kind kind, Span span): kind(kind), span(span) {}
@@ -269,15 +270,15 @@ private:
 // Imports
 struct NodeImport: public Import {
     std::string name;
-    std::vector<std::unique_ptr<Import>> nested;
+    std::vector<std::shared_ptr<Import>> nested;
 
-    NodeImport(std::string name, std::unique_ptr<Import> import, Span span):
+    NodeImport(std::string name, std::shared_ptr<Import> import, Span span):
         Import(Kind::Node, span),
         name(std::move(name)) {
         nested.push_back(std::move(import));
     }
 
-    NodeImport(std::string name, std::vector<std::unique_ptr<Import>> nested, Span span):
+    NodeImport(std::string name, std::vector<std::shared_ptr<Import>> nested, Span span):
         Import(Kind::Node, span),
         name(std::move(name)),
         nested(std::move(nested)) {}
@@ -322,13 +323,19 @@ struct UnitType: public Type {
     explicit UnitType(Span span): Type(Kind::Unit, span) {}
 };
 
+struct VarType: public Type {
+    std::string ident;
+
+    VarType(std::string ident, Span span): Type(Kind::Var, span), ident(std::move(ident)) {}
+};
+
 struct EnumType: public Type {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     EnumType(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
         Type(Kind::Enum, span),
@@ -338,11 +345,11 @@ struct EnumType: public Type {
 
 struct ClassType: public Type {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     ClassType(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
         Type(Kind::Class, span),
@@ -352,11 +359,11 @@ struct ClassType: public Type {
 
 struct TypealiasType: public Type {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     TypealiasType(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
         Type(Kind::Typealias, span),
@@ -366,11 +373,11 @@ struct TypealiasType: public Type {
 
 struct InterfaceType: public Type {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     InterfaceType(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
         Type(Kind::Interface, span),
@@ -379,24 +386,24 @@ struct InterfaceType: public Type {
 };
 
 struct TupleType: public Type {
-    std::vector<std::unique_ptr<Type>> elems;
+    std::vector<std::shared_ptr<Type>> elems;
 
-    TupleType(std::vector<std::unique_ptr<Type>> elems, Span span):
+    TupleType(std::vector<std::shared_ptr<Type>> elems, Span span):
         Type(Kind::Tuple, span),
         elems(std::move(elems)) {}
 };
 
 struct ArrowType: public Type {
-    std::vector<std::unique_ptr<Type>> inputs;
-    std::unique_ptr<Type> output;
+    std::vector<std::shared_ptr<Type>> inputs;
+    std::shared_ptr<Type> output;
 
-    ArrowType(std::unique_ptr<Type> input, std::unique_ptr<Type> output, Span span):
+    ArrowType(std::shared_ptr<Type> input, std::shared_ptr<Type> output, Span span):
         Type(Kind::Arrow, span),
         output(std::move(output)) {
         inputs.push_back(std::move(input));
     }
 
-    ArrowType(std::vector<std::unique_ptr<Type>> inputs, std::unique_ptr<Type> output, Span span):
+    ArrowType(std::vector<std::shared_ptr<Type>> inputs, std::shared_ptr<Type> output, Span span):
         Type(Kind::Arrow, span),
         inputs(std::move(inputs)),
         output(std::move(output)) {}
@@ -433,23 +440,23 @@ struct StringLit: public Lit {
 
 // patterns
 struct LitPat: public Pat {
-    std::unique_ptr<Lit> literal;
+    std::shared_ptr<Lit> literal;
 
-    LitPat(std::unique_ptr<Lit> literal, Span span):
+    LitPat(std::shared_ptr<Lit> literal, Span span):
         Pat(Kind::Lit, span),
         literal(std::move(literal)) {}
 };
 
 struct VarPat: public Pat {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
-    std::unique_ptr<Type> hint;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+    std::shared_ptr<Type> hint;
     bool is_mut;
 
     VarPat(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
-        std::unique_ptr<Type> hint,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
+        std::shared_ptr<Type> hint,
         bool is_mut,
         Span span
     ):
@@ -461,22 +468,22 @@ struct VarPat: public Pat {
 };
 
 struct TuplePat: public Pat {
-    std::vector<std::unique_ptr<Pat>> elems;
+    std::vector<std::shared_ptr<Pat>> elems;
 
-    TuplePat(std::vector<std::unique_ptr<Pat>> elems, Span span):
+    TuplePat(std::vector<std::shared_ptr<Pat>> elems, Span span):
         Pat(Kind::Tuple, span),
         elems(std::move(elems)) {}
 };
 
 struct CtorPat: public Pat {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
-    std::optional<std::vector<std::unique_ptr<Pat>>> args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Pat>>> args;
 
     CtorPat(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
-        std::optional<std::vector<std::unique_ptr<Pat>>> args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Pat>>> args,
         Span span
     ):
         Pat(Kind::Ctor, span),
@@ -490,24 +497,24 @@ struct WildPat: public Pat {
 };
 
 struct OrPat: public Pat {
-    std::vector<std::unique_ptr<Pat>> options;
+    std::vector<std::shared_ptr<Pat>> options;
 
-    OrPat(std::vector<std::unique_ptr<Pat>> options, Span span):
+    OrPat(std::vector<std::shared_ptr<Pat>> options, Span span):
         Pat(Kind::Or, span),
         options(std::move(options)) {}
 };
 
 struct AtPat: public Pat {
     std::string ident;
-    std::unique_ptr<Type> hint;
+    std::shared_ptr<Type> hint;
     bool is_mut;
-    std::unique_ptr<Pat> pat;
+    std::shared_ptr<Pat> pat;
 
     AtPat(
         std::string ident,
-        std::unique_ptr<Type> hint,
+        std::shared_ptr<Type> hint,
         bool is_mut,
-        std::unique_ptr<Pat> pat,
+        std::shared_ptr<Pat> pat,
         Span span
     ):
         Pat(Kind::At, span),
@@ -519,14 +526,14 @@ struct AtPat: public Pat {
 
 // Statements
 struct LetStmt: public Stmt {
-    std::unique_ptr<Pat> pat;
-    std::unique_ptr<Expr> expr;
-    std::optional<std::unique_ptr<Expr>> else_branch;
+    std::shared_ptr<Pat> pat;
+    std::shared_ptr<Expr> expr;
+    std::optional<std::shared_ptr<Expr>> else_branch;
 
     LetStmt(
-        std::unique_ptr<Pat> pat,
-        std::unique_ptr<Expr> expr,
-        std::optional<std::unique_ptr<Expr>> else_branch,
+        std::shared_ptr<Pat> pat,
+        std::shared_ptr<Expr> expr,
+        std::optional<std::shared_ptr<Expr>> else_branch,
         Span span
     ):
         Stmt(Kind::Let, span),
@@ -537,15 +544,15 @@ struct LetStmt: public Stmt {
 
 struct FuncStmt: public Stmt {
     std::string ident;
-    std::vector<std::unique_ptr<Pat>> params;
-    std::unique_ptr<Type> ret_type;
-    std::unique_ptr<Expr> body;
+    std::vector<std::shared_ptr<Pat>> params;
+    std::shared_ptr<Type> ret_type;
+    std::shared_ptr<Expr> body;
 
     FuncStmt(
         std::string ident,
-        std::vector<std::unique_ptr<Pat>> params,
-        std::unique_ptr<Type> ret_type,
-        std::unique_ptr<Expr> body,
+        std::vector<std::shared_ptr<Pat>> params,
+        std::shared_ptr<Type> ret_type,
+        std::shared_ptr<Expr> body,
         Span span
     ):
         Stmt(Kind::Func, span),
@@ -556,20 +563,20 @@ struct FuncStmt: public Stmt {
 };
 
 struct BindStmt: public Stmt {
-    std::unique_ptr<Pat> pat;
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Pat> pat;
+    std::shared_ptr<Expr> expr;
 
-    BindStmt(std::unique_ptr<Pat> pat, std::unique_ptr<Expr> expr, Span span):
+    BindStmt(std::shared_ptr<Pat> pat, std::shared_ptr<Expr> expr, Span span):
         Stmt(Kind::Bind, span),
         pat(std::move(pat)),
         expr(std::move(expr)) {}
 };
 
 struct ExprStmt: public Stmt {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
     bool is_val;
 
-    ExprStmt(std::unique_ptr<Expr> expr, bool is_val, Span span):
+    ExprStmt(std::shared_ptr<Expr> expr, bool is_val, Span span):
         Stmt(Kind::Expr, span),
         expr(std::move(expr)),
         is_val(is_val) {}
@@ -577,9 +584,9 @@ struct ExprStmt: public Stmt {
 
 // Exprs
 struct LitExpr: public Expr {
-    std::unique_ptr<Lit> literal;
+    std::shared_ptr<Lit> literal;
 
-    LitExpr(std::unique_ptr<Lit> literal, Span span):
+    LitExpr(std::shared_ptr<Lit> literal, Span span):
         Expr(Kind::Lit, span),
         literal(std::move(literal)) {}
 };
@@ -609,80 +616,80 @@ private:
 };
 
 struct PosExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    PosExpr(std::unique_ptr<Expr> expr, Span span):
+    PosExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::Pos, span),
         expr(std::move(expr)) {}
 };
 
 struct NegExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    NegExpr(std::unique_ptr<Expr> expr, Span span):
+    NegExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::Neg, span),
         expr(std::move(expr)) {}
 };
 
 struct NotExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    NotExpr(std::unique_ptr<Expr> expr, Span span):
+    NotExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::Not, span),
         expr(std::move(expr)) {}
 };
 
 struct AddrExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    AddrExpr(std::unique_ptr<Expr> expr, Span span):
+    AddrExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::Addr, span),
         expr(std::move(expr)) {}
 };
 
 struct DerefExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    DerefExpr(std::unique_ptr<Expr> expr, Span span):
+    DerefExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::Deref, span),
         expr(std::move(expr)) {}
 };
 
 struct TryExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    TryExpr(std::unique_ptr<Expr> expr, Span span):
+    TryExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::Try, span),
         expr(std::move(expr)) {}
 };
 
 struct NewExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    NewExpr(std::unique_ptr<Expr> expr, Span span):
+    NewExpr(std::shared_ptr<Expr> expr, Span span):
         UnaryExpr(Op::New, span),
         expr(std::move(expr)) {}
 };
 
 struct IndexExpr: public UnaryExpr {
-    std::unique_ptr<Expr> base;
-    std::vector<std::unique_ptr<Expr>> indices;
+    std::shared_ptr<Expr> base;
+    std::vector<std::shared_ptr<Expr>> indices;
 
-    IndexExpr(std::unique_ptr<Expr> base, std::vector<std::unique_ptr<Expr>> indices, Span span):
+    IndexExpr(std::shared_ptr<Expr> base, std::vector<std::shared_ptr<Expr>> indices, Span span):
         UnaryExpr(Op::Index, span),
         base(std::move(base)),
         indices(std::move(indices)) {}
 };
 
 struct FieldExpr: public UnaryExpr {
-    std::unique_ptr<Expr> base;
+    std::shared_ptr<Expr> base;
     std::vector<std::string> path;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     FieldExpr(
-        std::unique_ptr<Expr> base,
+        std::shared_ptr<Expr> base,
         std::vector<std::string> path,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
         UnaryExpr(Op::Field, span),
@@ -692,10 +699,10 @@ struct FieldExpr: public UnaryExpr {
 };
 
 struct ProjExpr: public UnaryExpr {
-    std::unique_ptr<Expr> base;
+    std::shared_ptr<Expr> base;
     int index;
 
-    ProjExpr(std::unique_ptr<Expr> base, int index, Span span):
+    ProjExpr(std::shared_ptr<Expr> base, int index, Span span):
         UnaryExpr(Op::Proj, span),
         base(std::move(base)),
         index(index) {}
@@ -730,130 +737,130 @@ private:
 };
 
 struct AddExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    AddExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    AddExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Add, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct SubExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    SubExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    SubExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Sub, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct MulExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    MulExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    MulExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Mul, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct DivExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    DivExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    DivExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Div, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct ModExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    ModExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    ModExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Mod, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct AndExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    AndExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    AndExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::And, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct OrExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    OrExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    OrExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Or, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct EqExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    EqExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    EqExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Eq, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct NeqExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    NeqExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    NeqExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Neq, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct LtExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    LtExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    LtExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Lt, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct GtExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    GtExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    GtExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Gt, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct LteExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    LteExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    LteExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Lte, span),
         left(std::move(left)),
         right(std::move(right)) {}
 };
 
 struct GteExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    GteExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    GteExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Gte, span),
         left(std::move(left)),
         right(std::move(right)) {}
@@ -861,16 +868,16 @@ struct GteExpr: public BinaryExpr {
 
 struct AssignExpr: public BinaryExpr {
     BinaryExpr::Op mode;
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
 
-    AssignExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    AssignExpr(std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Assign, span),
         mode(Op::Assign),
         left(std::move(left)),
         right(std::move(right)) {}
 
-    AssignExpr(Op mode, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+    AssignExpr(Op mode, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right, Span span):
         BinaryExpr(Op::Assign, span),
         mode(mode),
         left(std::move(left)),
@@ -878,16 +885,16 @@ struct AssignExpr: public BinaryExpr {
 };
 
 struct TupleExpr: public Expr {
-    std::vector<std::unique_ptr<Expr>> elems;
-    explicit TupleExpr(std::vector<std::unique_ptr<Expr>> elems, Span span):
+    std::vector<std::shared_ptr<Expr>> elems;
+    explicit TupleExpr(std::vector<std::shared_ptr<Expr>> elems, Span span):
         Expr(Expr::Kind::Tuple, span),
         elems(std::move(elems)) {}
 };
 
 struct HintExpr: public Expr {
-    std::unique_ptr<Expr> expr;
-    std::unique_ptr<Type> type;
-    HintExpr(std::unique_ptr<Expr> expr, std::unique_ptr<Type> type, Span span):
+    std::shared_ptr<Expr> expr;
+    std::shared_ptr<Type> type;
+    HintExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Type> type, Span span):
         Expr(Expr::Kind::Hint, span),
         expr(std::move(expr)),
         type(std::move(type)) {}
@@ -895,11 +902,11 @@ struct HintExpr: public Expr {
 
 struct ConstExpr: public Expr {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> type_args;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     ConstExpr(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> type_args,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
         Expr(Kind::Const, span),
@@ -914,32 +921,32 @@ struct VarExpr: public Expr {
 };
 
 struct LamExpr: public Expr {
-    std::vector<std::unique_ptr<Pat>> params;
-    std::unique_ptr<Expr> body;
+    std::vector<std::shared_ptr<Pat>> params;
+    std::shared_ptr<Expr> body;
 
-    LamExpr(std::vector<std::unique_ptr<Pat>> params, std::unique_ptr<Expr> body, Span span):
+    LamExpr(std::vector<std::shared_ptr<Pat>> params, std::shared_ptr<Expr> body, Span span):
         Expr(Kind::Lam, span),
         params(std::move(params)),
         body(std::move(body)) {}
 };
 
 struct AppExpr: public Expr {
-    std::unique_ptr<Expr> func;
-    std::vector<std::unique_ptr<Expr>> args;
+    std::shared_ptr<Expr> func;
+    std::vector<std::shared_ptr<Expr>> args;
 
-    AppExpr(std::unique_ptr<Expr> func, std::vector<std::unique_ptr<Expr>> args, Span span):
+    AppExpr(std::shared_ptr<Expr> func, std::vector<std::shared_ptr<Expr>> args, Span span):
         Expr(Kind::App, span),
         func(std::move(func)),
         args(std::move(args)) {}
 };
 
 struct BlockExpr: public Expr {
-    std::vector<std::unique_ptr<Stmt>> stmts;
-    std::optional<std::unique_ptr<Expr>> body;
+    std::vector<std::shared_ptr<Stmt>> stmts;
+    std::optional<std::shared_ptr<Expr>> body;
 
-    explicit BlockExpr(std::vector<std::unique_ptr<Stmt>> stmts, Span span):
+    explicit BlockExpr(std::vector<std::shared_ptr<Stmt>> stmts, Span span):
         Expr(Kind::Block, span) {
-        std::optional<std::unique_ptr<Expr>> body = std::nullopt;
+        std::optional<std::shared_ptr<Expr>> body = std::nullopt;
         if (!stmts.empty() && stmts.back()->get_kind() == Stmt::Kind::Expr) {
             auto* expr = static_cast<ExprStmt*>(stmts.back().get());
             if (expr->is_val) {
@@ -961,25 +968,25 @@ struct ContinueExpr: public Expr {
 };
 
 struct ReturnExpr: public Expr {
-    std::optional<std::unique_ptr<Expr>> expr;
+    std::optional<std::shared_ptr<Expr>> expr;
 
-    explicit ReturnExpr(std::optional<std::unique_ptr<Expr>> expr, Span span):
+    explicit ReturnExpr(std::optional<std::shared_ptr<Expr>> expr, Span span):
         Expr(Kind::Return, span),
         expr(std::move(expr)) {}
 };
 
 struct IteThen {
-    std::unique_ptr<Cond> cond;
-    std::unique_ptr<Expr> then_branch;
+    std::shared_ptr<Cond> cond;
+    std::shared_ptr<Expr> then_branch;
 };
 
 struct IteExpr: public Expr {
     std::vector<IteThen> then_branches;
-    std::optional<std::unique_ptr<Expr>> else_branch;
+    std::optional<std::shared_ptr<Expr>> else_branch;
 
     IteExpr(
         std::vector<IteThen> then_branches,
-        std::optional<std::unique_ptr<Expr>> else_branch,
+        std::optional<std::shared_ptr<Expr>> else_branch,
         Span span
     ):
         Expr(Kind::Ite, span),
@@ -988,32 +995,32 @@ struct IteExpr: public Expr {
 };
 
 struct ExprCond: public Cond {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    explicit ExprCond(std::unique_ptr<Expr> expr, Span span):
+    explicit ExprCond(std::shared_ptr<Expr> expr, Span span):
         Cond(Kind::Expr, span),
         expr(std::move(expr)) {}
 };
 
 struct PatCond: public Cond {
-    std::unique_ptr<Pat> pat;
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Pat> pat;
+    std::shared_ptr<Expr> expr;
 
-    PatCond(std::unique_ptr<Pat> pat, std::unique_ptr<Expr> expr, Span span):
+    PatCond(std::shared_ptr<Pat> pat, std::shared_ptr<Expr> expr, Span span):
         Cond(Kind::Case, span),
         pat(std::move(pat)),
         expr(std::move(expr)) {}
 };
 
 struct CaseClause: public Clause {
-    std::unique_ptr<Pat> pat;
-    std::optional<std::unique_ptr<Expr>> guard;
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Pat> pat;
+    std::optional<std::shared_ptr<Expr>> guard;
+    std::shared_ptr<Expr> expr;
 
     CaseClause(
-        std::unique_ptr<Pat> pat,
-        std::optional<std::unique_ptr<Expr>> guard,
-        std::unique_ptr<Expr> expr,
+        std::shared_ptr<Pat> pat,
+        std::optional<std::shared_ptr<Expr>> guard,
+        std::shared_ptr<Expr> expr,
         Span span
     ):
         Clause(Clause::Kind::Case, span),
@@ -1023,32 +1030,32 @@ struct CaseClause: public Clause {
 };
 
 struct DefaultClause: public Clause {
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    explicit DefaultClause(std::unique_ptr<Expr> expr, Span span):
+    explicit DefaultClause(std::shared_ptr<Expr> expr, Span span):
         Clause(Clause::Kind::Default, span),
         expr(std::move(expr)) {}
 };
 
 struct SwitchExpr: public Expr {
-    std::unique_ptr<Expr> expr;
-    std::vector<std::unique_ptr<Clause>> clauses;
+    std::shared_ptr<Expr> expr;
+    std::vector<std::shared_ptr<Clause>> clauses;
 
-    SwitchExpr(std::unique_ptr<Expr> expr, std::vector<std::unique_ptr<Clause>> clauses, Span span):
+    SwitchExpr(std::shared_ptr<Expr> expr, std::vector<std::shared_ptr<Clause>> clauses, Span span):
         Expr(Kind::Switch, span),
         expr(std::move(expr)),
         clauses(std::move(clauses)) {}
 };
 
 struct ForExpr: public Expr {
-    std::unique_ptr<Pat> pat;
-    std::unique_ptr<Expr> iter;
-    std::unique_ptr<Expr> body;
+    std::shared_ptr<Pat> pat;
+    std::shared_ptr<Expr> iter;
+    std::shared_ptr<Expr> body;
 
     ForExpr(
-        std::unique_ptr<Pat> pat,
-        std::unique_ptr<Expr> iter,
-        std::unique_ptr<Expr> body,
+        std::shared_ptr<Pat> pat,
+        std::shared_ptr<Expr> iter,
+        std::shared_ptr<Expr> body,
         Span span
     ):
         Expr(Kind::For, span),
@@ -1058,34 +1065,34 @@ struct ForExpr: public Expr {
 };
 
 struct WhileExpr: public Expr {
-    std::unique_ptr<Cond> cond;
-    std::unique_ptr<Expr> body;
+    std::shared_ptr<Cond> cond;
+    std::shared_ptr<Expr> body;
 
-    WhileExpr(std::unique_ptr<Cond> cond, std::unique_ptr<Expr> body, Span span):
+    WhileExpr(std::shared_ptr<Cond> cond, std::shared_ptr<Expr> body, Span span):
         Expr(Kind::While, span),
         cond(std::move(cond)),
         body(std::move(body)) {}
 };
 
 struct LoopExpr: public Expr {
-    std::unique_ptr<Expr> body;
+    std::shared_ptr<Expr> body;
 
-    explicit LoopExpr(std::unique_ptr<Expr> body, Span span):
+    explicit LoopExpr(std::shared_ptr<Expr> body, Span span):
         Expr(Kind::Loop, span),
         body(std::move(body)) {}
 };
 
 // declarations
 struct TypeBound {
-    std::unique_ptr<Type> type;
-    std::vector<std::unique_ptr<Type>> bounds;
+    std::shared_ptr<Type> type;
+    std::vector<std::shared_ptr<Type>> bounds;
 };
 
 struct ModuleDecl: public Decl {
     std::string ident;
-    std::vector<std::unique_ptr<Decl>> body;
+    std::vector<std::shared_ptr<Decl>> body;
 
-    ModuleDecl(std::string ident, std::vector<std::unique_ptr<Decl>> body, Span span):
+    ModuleDecl(std::string ident, std::vector<std::shared_ptr<Decl>> body, Span span):
         Decl(Kind::Module, span),
         ident(std::move(ident)),
         body(std::move(body)) {}
@@ -1095,13 +1102,13 @@ struct ClassDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::vector<std::unique_ptr<Decl>> body;
+    std::vector<std::shared_ptr<Decl>> body;
 
     ClassDecl(
         std::string ident,
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::vector<std::unique_ptr<Decl>> body,
+        std::vector<std::shared_ptr<Decl>> body,
         Span span
     ):
         Decl(Kind::Class, span),
@@ -1115,13 +1122,13 @@ struct EnumDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::vector<std::unique_ptr<Decl>> body;
+    std::vector<std::shared_ptr<Decl>> body;
 
     EnumDecl(
         std::string ident,
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::vector<std::unique_ptr<Decl>> body,
+        std::vector<std::shared_ptr<Decl>> body,
         Span span
     ):
         Decl(Kind::Enum, span),
@@ -1135,15 +1142,15 @@ struct TypealiasDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::vector<std::unique_ptr<Type>> hint;
-    std::optional<std::unique_ptr<Type>> aliased;
+    std::vector<std::shared_ptr<Type>> hint;
+    std::optional<std::shared_ptr<Type>> aliased;
 
     TypealiasDecl(
         std::string ident,
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::vector<std::unique_ptr<Type>> hint,
-        std::optional<std::unique_ptr<Type>> aliased,
+        std::vector<std::shared_ptr<Type>> hint,
+        std::optional<std::shared_ptr<Type>> aliased,
         Span span
     ):
         Decl(Kind::Typealias, span),
@@ -1158,13 +1165,13 @@ struct InterfaceDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::vector<std::unique_ptr<Decl>> body;
+    std::vector<std::shared_ptr<Decl>> body;
 
     InterfaceDecl(
         std::string ident,
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::vector<std::unique_ptr<Decl>> body,
+        std::vector<std::shared_ptr<Decl>> body,
         Span span
     ):
         Decl(Kind::Interface, span),
@@ -1178,16 +1185,16 @@ struct ExtensionDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::unique_ptr<Type> base_type;
-    std::unique_ptr<Type> interface;
-    std::vector<std::unique_ptr<Decl>> body;
+    std::shared_ptr<Type> base_type;
+    std::shared_ptr<Type> interface;
+    std::vector<std::shared_ptr<Decl>> body;
 
     ExtensionDecl(
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::unique_ptr<Type> base_type,
-        std::unique_ptr<Type> interface,
-        std::vector<std::unique_ptr<Decl>> body,
+        std::shared_ptr<Type> base_type,
+        std::shared_ptr<Type> interface,
+        std::vector<std::shared_ptr<Decl>> body,
         Span span
     ):
         Decl(Kind::Extension, span),
@@ -1199,10 +1206,10 @@ struct ExtensionDecl: public Decl {
 };
 
 struct LetDecl: public Decl {
-    std::unique_ptr<Pat> pat;
-    std::optional<std::unique_ptr<Expr>> expr;
+    std::shared_ptr<Pat> pat;
+    std::optional<std::shared_ptr<Expr>> expr;
 
-    LetDecl(std::unique_ptr<Pat> pat, std::optional<std::unique_ptr<Expr>> expr, Span span):
+    LetDecl(std::shared_ptr<Pat> pat, std::optional<std::shared_ptr<Expr>> expr, Span span):
         Decl(Kind::Let, span),
         pat(std::move(pat)),
         expr(std::move(expr)) {}
@@ -1212,17 +1219,17 @@ struct FuncDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::vector<std::unique_ptr<Pat>> params;
-    std::unique_ptr<Type> ret_type;
-    std::optional<std::unique_ptr<Expr>> body;
+    std::vector<std::shared_ptr<Pat>> params;
+    std::shared_ptr<Type> ret_type;
+    std::optional<std::shared_ptr<Expr>> body;
 
     FuncDecl(
         std::string ident,
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::vector<std::unique_ptr<Pat>> params,
-        std::unique_ptr<Type> ret_type,
-        std::optional<std::unique_ptr<Expr>> body,
+        std::vector<std::shared_ptr<Pat>> params,
+        std::shared_ptr<Type> ret_type,
+        std::optional<std::shared_ptr<Expr>> body,
         Span span
     ):
         Decl(Kind::Func, span),
@@ -1238,17 +1245,17 @@ struct InitDecl: public Decl {
     std::string ident;
     std::optional<std::vector<std::string>> type_params;
     std::vector<TypeBound> type_bounds;
-    std::vector<std::unique_ptr<Pat>> params;
-    std::unique_ptr<Type> ret_type;
-    std::optional<std::unique_ptr<Expr>> body;
+    std::vector<std::shared_ptr<Pat>> params;
+    std::shared_ptr<Type> ret_type;
+    std::optional<std::shared_ptr<Expr>> body;
 
     InitDecl(
         std::string ident,
         std::optional<std::vector<std::string>> type_params,
         std::vector<TypeBound> type_bounds,
-        std::vector<std::unique_ptr<Pat>> params,
-        std::unique_ptr<Type> ret_type,
-        std::optional<std::unique_ptr<Expr>> body,
+        std::vector<std::shared_ptr<Pat>> params,
+        std::shared_ptr<Type> ret_type,
+        std::optional<std::shared_ptr<Expr>> body,
         Span span
     ):
         Decl(Kind::Init, span),
@@ -1262,11 +1269,11 @@ struct InitDecl: public Decl {
 
 struct CtorDecl: public Decl {
     std::string ident;
-    std::optional<std::vector<std::unique_ptr<Type>>> params;
+    std::optional<std::vector<std::shared_ptr<Type>>> params;
 
     CtorDecl(
         std::string ident,
-        std::optional<std::vector<std::unique_ptr<Type>>> params,
+        std::optional<std::vector<std::shared_ptr<Type>>> params,
         Span span
     ):
         Decl(Kind::Ctor, span),
@@ -1276,13 +1283,13 @@ struct CtorDecl: public Decl {
 
 struct Package {
     std::string ident;
-    std::vector<std::unique_ptr<Import>> header;
-    std::vector<std::unique_ptr<Decl>> body;
+    std::vector<std::shared_ptr<Import>> header;
+    std::vector<std::shared_ptr<Decl>> body;
 
     Package(
         std::string ident,
-        std::vector<std::unique_ptr<Import>> header,
-        std::vector<std::unique_ptr<Decl>> body,
+        std::vector<std::shared_ptr<Import>> header,
+        std::vector<std::shared_ptr<Decl>> body,
         Span span
     ):
         ident(std::move(ident)),

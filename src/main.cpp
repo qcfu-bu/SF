@@ -2,7 +2,7 @@
 #include <print>
 #include <sstream>
 
-#include "elaborate/table.hpp"
+#include "elaborate/elab.hpp"
 #include "parsing/parser.hpp"
 #include "llvm/Support/CommandLine.h"
 
@@ -53,6 +53,9 @@ int main(int argc, char** argv) {
 
     elaborate::TableBuilder table_builder(pkg);
     elaborate::Table table = table_builder.build();
+
+    elaborate::Elaborator elaborator(table);
+    auto pkg_elab = elaborator.elaborate(pkg);
 
     std::println("{}", pkg);
 

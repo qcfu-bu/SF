@@ -110,10 +110,10 @@ struct Table {
         return active->counter++;
     }
 
+    void add_node(const std::string& ident, TableNode::Kind kind);
     void enter_node(const std::string& ident);
     void exit_node();
 
-    void add_node(const std::string& ident, TableNode::Kind kind);
     void add_type_symbol(const std::string& ident, Symbol symbol);
     void add_expr_symbol(const std::string& ident, Symbol symbol);
 
