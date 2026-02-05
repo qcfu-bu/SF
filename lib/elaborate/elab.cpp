@@ -3,6 +3,7 @@
 #include <ranges>
 
 #include "elab.hpp"
+#include "elaborate/table.hpp"
 
 namespace elaborate {
 
@@ -126,6 +127,121 @@ std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
                 std::move(inputs),
                 std::move(output),
                 type.get_span()
+            );
+        }
+    }
+}
+
+std::shared_ptr<Lit> Elaborator::elab_lit(parsing::Lit& lit) {
+    switch (lit.get_kind()) {
+        case parsing::Lit::Kind::Unit:
+            return std::make_shared<UnitLit>(lit.get_span());
+        case parsing::Lit::Kind::Int: {
+            auto& int_lit = static_cast<parsing::IntLit&>(lit);
+            return std::make_shared<IntLit>(int_lit.value, lit.get_span());
+        }
+        case parsing::Lit::Kind::Bool: {
+            auto& bool_lit = static_cast<parsing::BoolLit&>(lit);
+            return std::make_shared<BoolLit>(bool_lit.value, lit.get_span());
+        }
+        case parsing::Lit::Kind::Char: {
+            auto& char_lit = static_cast<parsing::CharLit&>(lit);
+            return std::make_shared<CharLit>(char_lit.value, lit.get_span());
+        }
+        case parsing::Lit::Kind::String: {
+            auto& string_lit = static_cast<parsing::StringLit&>(lit);
+            return std::make_shared<StringLit>(string_lit.value, lit.get_span());
+        }
+    }
+}
+
+std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
+    switch (pat.get_kind()) {
+        case parsing::Pat::Kind::Lit: {
+            auto& lit_pat = static_cast<parsing::LitPat&>(pat);
+            auto lit = elab_lit(*lit_pat.literal);
+            return std::make_shared<LitPat>(std::move(lit), pat.get_span());
+        }
+        case parsing::Pat::Kind::Tuple: {
+            auto& tuple_pat = static_cast<parsing::TuplePat&>(pat);
+            std::vector<std::shared_ptr<Pat>> elems;
+            for (auto& elem: tuple_pat.elems) {
+                elems.push_back(elab_pat(*elem));
+            }
+            return std::make_shared<TuplePat>(std::move(elems), pat.get_span());
+        }
+        case parsing::Pat::Kind::Ctor: {
+            auto& ctor_pat = static_cast<parsing::CtorPat&>(pat);
+            std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+            auto [path, rest] = ctor_pat.name.slice();
+            if (!rest.empty()) {
+                throw std::runtime_error(
+                    std::format("Invalid constructor pattern: {}", ctor_pat.name)
+                );
+            }
+            auto symbol = table.find_expr_symbol(ctor_pat.name.ident, path);
+            if (symbol.get_kind() != Symbol::Kind::Ctor) {
+                throw std::runtime_error(
+                    std::format("Invalid constructor pattern: {}", ctor_pat.name)
+                );
+            }
+            if (ctor_pat.type_args.has_value()) {
+                type_args = std::vector<std::shared_ptr<Type>> {};
+                for (auto& arg: *ctor_pat.type_args) {
+                    type_args->push_back(elab_type(*arg));
+                }
+            }
+            std::optional<std::vector<std::shared_ptr<Pat>>> args;
+            if (ctor_pat.args.has_value()) {
+                args = std::vector<std::shared_ptr<Pat>> {};
+                for (auto& arg: *ctor_pat.args) {
+                    args->push_back(elab_pat(*arg));
+                }
+            }
+            return std::make_shared<CtorPat>(
+                symbol.get_path(),
+                std::move(type_args),
+                std::move(args),
+                pat.get_span()
+            );
+        }
+        case parsing::Pat::Kind::Name: {
+            auto& name_pat = static_cast<parsing::NamePat&>(pat);
+            auto hint = elab_type(*name_pat.hint);
+            return std::make_shared<VarPat>(
+                name_pat.name.ident,
+                std::move(hint),
+                name_pat.is_mut,
+                pat.get_span()
+            );
+        }
+        case parsing::Pat::Kind::Wild: {
+            auto& wild_pat = static_cast<parsing::WildPat&>(pat);
+            return std::make_shared<WildPat>(pat.get_span());
+        }
+        case parsing::Pat::Kind::Or: {
+            auto& or_pat = static_cast<parsing::OrPat&>(pat);
+            std::vector<std::shared_ptr<Pat>> options;
+            for (auto& option: or_pat.options) {
+                options.push_back(elab_pat(*option));
+            }
+            return std::make_shared<OrPat>(std::move(options), pat.get_span());
+        }
+        case parsing::Pat::Kind::At: {
+            auto& at_pat = static_cast<parsing::AtPat&>(pat);
+            auto hint = elab_type(*at_pat.hint);
+            auto sub_pat = elab_pat(*at_pat.pat);
+            if (!at_pat.name.path.empty()) {
+                throw std::runtime_error(
+                    std::format("Invalid @pattern variable name: {}", at_pat.name)
+                );
+            }
+            return std::make_shared<AtPat>(
+                at_pat.name.ident,
+                std::move(hint),
+                at_pat.is_mut,
+                std::move(sub_pat),
+                pat.get_span()
             );
         }
     }

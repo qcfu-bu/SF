@@ -449,20 +449,12 @@ struct LitPat: public Pat {
 
 struct VarPat: public Pat {
     std::string ident;
-    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
     std::shared_ptr<Type> hint;
     bool is_mut;
 
-    VarPat(
-        std::string ident,
-        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
-        std::shared_ptr<Type> hint,
-        bool is_mut,
-        Span span
-    ):
+    VarPat(std::string ident, std::shared_ptr<Type> hint, bool is_mut, Span span):
         Pat(Kind::Var, span),
         ident(std::move(ident)),
-        type_args(std::move(type_args)),
         hint(std::move(hint)),
         is_mut(is_mut) {}
 };
