@@ -1419,7 +1419,6 @@ std::unique_ptr<CtorDecl> Parser::parse_ctor_decl() {
     return std::make_unique<CtorDecl>(std::move(name), std::move(params), make_span(start));
 }
 
-
 std::unique_ptr<Decl> Parser::parse_decl() {
     auto attrs = parse_attrs();
     auto access = parse_access();
@@ -1480,7 +1479,7 @@ Package Parser::parse_package() {
         body.push_back(parse_decl());
     }
     done();
-    return Package(pkgName, std::move(header), std::move(body), make_span(start));
+    return Package(pkg_name, std::move(header), std::move(body), make_span(start));
 }
 
 } // namespace parsing

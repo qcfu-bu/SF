@@ -10,8 +10,8 @@ namespace parsing {
 
 class Parser {
 public:
-    explicit Parser(std::string pkgName, std::string input):
-        pkgName(std::move(pkgName)),
+    explicit Parser(std::string pkg_name, std::string input):
+        pkg_name(std::move(pkg_name)),
         lexer(std::move(input)) {}
 
     std::unique_ptr<Type> parse_type();
@@ -21,7 +21,7 @@ public:
     Package parse_package();
 
 private:
-    std::string pkgName;
+    std::string pkg_name;
     Lexer lexer;
     Span last_span = {};
 
@@ -40,7 +40,7 @@ private:
     }
 
     Span make_span(Location start) {
-        return Span{start, last_span.end};
+        return Span { start, last_span.end };
     }
 
     void expect(Token::Kind expected) {
