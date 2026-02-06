@@ -28,6 +28,8 @@ public:
     bool has_type_var(const std::string& ident) const;
     std::optional<std::shared_ptr<Type>> find_expr_var(const std::string& ident);
 
+    void pat_add_vars(const elaborate::Pat& pat);
+
 private:
     std::vector<Scope> scopes;
 };
@@ -46,7 +48,7 @@ private:
     std::shared_ptr<Type> elab_type(parsing::Type& type);
     std::shared_ptr<Lit> elab_lit(parsing::Lit& lit);
     std::shared_ptr<Pat> elab_pat(parsing::Pat& pat);
-    std::shared_ptr<Cond> elab_cond(parsing::Expr& expr);
+    std::shared_ptr<Cond> elab_cond(parsing::Cond& expr);
     std::shared_ptr<Expr> elab_expr(parsing::Expr& expr);
     std::shared_ptr<Stmt> elab_stmt(parsing::Stmt& stmt);
     std::shared_ptr<Decl> elab_decl(parsing::Decl& decl);

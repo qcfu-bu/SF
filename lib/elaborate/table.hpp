@@ -122,6 +122,9 @@ struct Table {
 
     void import(const parsing::Import& import);
 
+    void pat_rewrite(std::unique_ptr<parsing::Pat>& pat);
+    void pat_add_vars(const parsing::Pat& pat, Access access);
+
 private:
     std::shared_ptr<TableNode> root;
     TableNode* active;
@@ -155,9 +158,6 @@ private:
     void build_constants();
     void build_variables();
 };
-
-void pattern_rewrite(Table& table, std::unique_ptr<parsing::Pat>& pat);
-void pattern_add_vars(Table& table, const parsing::Pat& pat, Access access);
 
 } // namespace elaborate
 

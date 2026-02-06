@@ -4,6 +4,7 @@
 
 #include "elab.hpp"
 #include "elaborate/table.hpp"
+#include "parsing/syntax.hpp"
 
 namespace elaborate {
 
@@ -49,6 +50,47 @@ std::optional<std::shared_ptr<Type>> Context::find_expr_var(const std::string& i
         }
     }
     return std::nullopt;
+}
+
+void Context::pat_add_vars(const elaborate::Pat& pat) {
+    switch (pat.get_kind()) {
+        case Pat::Kind::Var: {
+            const auto& var_pat = static_cast<const elaborate::VarPat&>(pat);
+            add_expr_var(var_pat.ident, var_pat.hint);
+            break;
+        }
+        case Pat::Kind::Tuple: {
+            const auto& tuple_pat = static_cast<const elaborate::TuplePat&>(pat);
+            for (const auto& elem: tuple_pat.elems) {
+                pat_add_vars(*elem);
+            }
+            break;
+        }
+        case Pat::Kind::Ctor: {
+            const auto& ctor_pat = static_cast<const elaborate::CtorPat&>(pat);
+            if (ctor_pat.args.has_value()) {
+                for (const auto& arg: *ctor_pat.args) {
+                    pat_add_vars(*arg);
+                }
+            }
+            break;
+        }
+        case Pat::Kind::Or: {
+            const auto& or_pat = static_cast<const elaborate::OrPat&>(pat);
+            for (const auto& option: or_pat.options) {
+                pat_add_vars(*option);
+            }
+            break;
+        }
+        case Pat::Kind::At: {
+            const auto& at_pat = static_cast<const elaborate::AtPat&>(pat);
+            add_expr_var(at_pat.ident, at_pat.hint);
+            pat_add_vars(*at_pat.pat);
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
@@ -242,6 +284,26 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
                 at_pat.is_mut,
                 std::move(sub_pat),
                 pat.get_span()
+            );
+        }
+    }
+}
+
+std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& expr) {
+    switch (expr.get_kind()) {
+        case parsing::Cond::Kind::Expr: {
+            auto& expr_cond = static_cast<parsing::ExprCond&>(expr);
+            auto elab_expr_ptr = elab_expr(*expr_cond.expr);
+            return std::make_shared<ExprCond>(std::move(elab_expr_ptr), expr.get_span());
+        }
+        case parsing::Cond::Kind::Case: {
+            auto& pat_cond = static_cast<parsing::PatCond&>(expr);
+            auto elab_pat_ptr = elab_pat(*pat_cond.pat);
+            auto elab_expr_ptr = elab_expr(*pat_cond.expr);
+            return std::make_shared<PatCond>(
+                std::move(elab_pat_ptr),
+                std::move(elab_expr_ptr),
+                expr.get_span()
             );
         }
     }

@@ -447,12 +447,12 @@ void TableBuilder::merge_symbols() {
     }
 }
 
-void pattern_rewrite(Table& table, std::unique_ptr<parsing::Pat>& pat) {
+void Table::pat_rewrite(std::unique_ptr<parsing::Pat>& pat) {
     switch (pat->get_kind()) {
         case parsing::Pat::Kind::Tuple: {
             auto& tuple_pat = static_cast<parsing::TuplePat&>(*pat);
             for (auto& elem: tuple_pat.elems) {
-                pattern_rewrite(table, elem);
+                pat_rewrite(elem);
             }
             break;
         }
@@ -460,7 +460,7 @@ void pattern_rewrite(Table& table, std::unique_ptr<parsing::Pat>& pat) {
             auto& ctor_pat = static_cast<parsing::CtorPat&>(*pat);
             if (ctor_pat.args.has_value()) {
                 for (auto& arg: *ctor_pat.args) {
-                    pattern_rewrite(table, arg);
+                    pat_rewrite(arg);
                 }
             }
             break;
@@ -473,7 +473,7 @@ void pattern_rewrite(Table& table, std::unique_ptr<parsing::Pat>& pat) {
             }
             std::optional<Symbol> symbol;
             try {
-                symbol = table.find_expr_symbol(name_pat.name.ident, path);
+                symbol = find_expr_symbol(name_pat.name.ident, path);
             } catch (...) {
                 // Not found, do nothing
             }
@@ -502,13 +502,13 @@ void pattern_rewrite(Table& table, std::unique_ptr<parsing::Pat>& pat) {
         case parsing::Pat::Kind::Or: {
             auto& or_pat = static_cast<parsing::OrPat&>(*pat);
             for (auto& option: or_pat.options) {
-                pattern_rewrite(table, option);
+                pat_rewrite(option);
             }
             break;
         }
         case parsing::Pat::Kind::At: {
             auto& at_pat = static_cast<parsing::AtPat&>(*pat);
-            pattern_rewrite(table, at_pat.pat);
+            pat_rewrite(at_pat.pat);
             break;
         }
         default:
@@ -516,12 +516,12 @@ void pattern_rewrite(Table& table, std::unique_ptr<parsing::Pat>& pat) {
     }
 }
 
-void pattern_add_vars(Table& table, const parsing::Pat& pat, Access access) {
+void Table::pat_add_vars(const parsing::Pat& pat, Access access) {
     switch (pat.get_kind()) {
         case parsing::Pat::Kind::Tuple: {
             const auto& tuple_pat = static_cast<const parsing::TuplePat&>(pat);
             for (const auto& elem: tuple_pat.elems) {
-                pattern_add_vars(table, *elem, access);
+                pat_add_vars(*elem, access);
             }
             break;
         }
@@ -529,20 +529,20 @@ void pattern_add_vars(Table& table, const parsing::Pat& pat, Access access) {
             const auto& ctor_pat = static_cast<const parsing::CtorPat&>(pat);
             if (ctor_pat.args.has_value()) {
                 for (const auto& arg: *ctor_pat.args) {
-                    pattern_add_vars(table, *arg, access);
+                    pat_add_vars(*arg, access);
                 }
             }
             break;
         }
         case parsing::Pat::Kind::Name: {
             const auto& name_pat = static_cast<const parsing::NamePat&>(pat);
-            table.add_expr_symbol(name_pat.name.ident, Symbol(Symbol::Kind::Var, access));
+            add_expr_symbol(name_pat.name.ident, Symbol(Symbol::Kind::Var, access));
             break;
         }
         case parsing::Pat::Kind::Or: {
             const auto& or_pat = static_cast<const parsing::OrPat&>(pat);
             for (const auto& option: or_pat.options) {
-                pattern_add_vars(table, *option, access);
+                pat_add_vars(*option, access);
             }
             break;
         }
@@ -551,8 +551,8 @@ void pattern_add_vars(Table& table, const parsing::Pat& pat, Access access) {
             if (!at_pat.name.path.empty()) {
                 throw std::runtime_error(std::format("Invalid pattern name: {}", at_pat.name));
             }
-            table.add_expr_symbol(at_pat.name.ident, Symbol(Symbol::Kind::Var, access));
-            pattern_add_vars(table, *at_pat.pat, access);
+            add_expr_symbol(at_pat.name.ident, Symbol(Symbol::Kind::Var, access));
+            pat_add_vars(*at_pat.pat, access);
             break;
         }
         default:
@@ -590,8 +590,8 @@ void TableBuilder::build_variables() {
             }
             case parsing::Decl::Kind::Let: {
                 auto& let_decl = static_cast<parsing::LetDecl&>(*decl);
-                pattern_rewrite(table, let_decl.pat);
-                pattern_add_vars(table, *let_decl.pat, let_decl.access);
+                table.pat_rewrite(let_decl.pat);
+                table.pat_add_vars(*let_decl.pat, let_decl.access);
                 break;
             }
             default:
