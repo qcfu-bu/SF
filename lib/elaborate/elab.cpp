@@ -289,21 +289,21 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
     }
 }
 
-std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& expr) {
-    switch (expr.get_kind()) {
+std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& cond) {
+    switch (cond.get_kind()) {
         case parsing::Cond::Kind::Expr: {
-            auto& expr_cond = static_cast<parsing::ExprCond&>(expr);
+            auto& expr_cond = static_cast<parsing::ExprCond&>(cond);
             auto elab_expr_ptr = elab_expr(*expr_cond.expr);
-            return std::make_shared<ExprCond>(std::move(elab_expr_ptr), expr.get_span());
+            return std::make_shared<ExprCond>(std::move(elab_expr_ptr), cond.get_span());
         }
         case parsing::Cond::Kind::Case: {
-            auto& pat_cond = static_cast<parsing::PatCond&>(expr);
+            auto& pat_cond = static_cast<parsing::PatCond&>(cond);
             auto elab_pat_ptr = elab_pat(*pat_cond.pat);
             auto elab_expr_ptr = elab_expr(*pat_cond.expr);
             return std::make_shared<PatCond>(
                 std::move(elab_pat_ptr),
                 std::move(elab_expr_ptr),
-                expr.get_span()
+                cond.get_span()
             );
         }
     }
