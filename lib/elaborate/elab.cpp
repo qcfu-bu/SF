@@ -319,6 +319,23 @@ std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
         case parsing::Expr::Kind::Unary: {
             auto& unary_expr = static_cast<parsing::UnaryExpr&>(expr);
             auto expr = elab_expr(*unary_expr.expr);
+            switch (unary_expr.get_op()) {
+                case parsing::UnaryExpr::Op::Pos:
+                    return std::make_shared<UnaryExpr>(
+                        UnaryExpr::Op::Pos,
+                        std::move(expr),
+                        expr.get()->get_span()
+                    );
+                case parsing::UnaryExpr::Op::Neg:
+                case parsing::UnaryExpr::Op::Not:
+                case parsing::UnaryExpr::Op::Addr:
+                case parsing::UnaryExpr::Op::Deref:
+                case parsing::UnaryExpr::Op::Try:
+                case parsing::UnaryExpr::Op::New:
+                case parsing::UnaryExpr::Op::Index:
+                case parsing::UnaryExpr::Op::Dot:
+                    break;
+            }
         }
         case parsing::Expr::Kind::Binary:
         case parsing::Expr::Kind::Tuple:

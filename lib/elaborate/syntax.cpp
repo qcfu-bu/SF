@@ -310,24 +310,25 @@ std::string format_expr(const Expr& expr, int indent) {
 
         case Expr::Kind::Unary: {
             const auto& u = static_cast<const UnaryExpr&>(expr);
+            auto result = format_expr(*u.expr, indent);
             switch (u.get_op()) {
                 case UnaryExpr::Op::Pos:
-                    return "+" + format_expr(*static_cast<const PosExpr&>(expr).expr, indent);
+                    return "+" + result;
                 case UnaryExpr::Op::Neg:
-                    return "-" + format_expr(*static_cast<const NegExpr&>(expr).expr, indent);
+                    return "-" + result;
                 case UnaryExpr::Op::Not:
-                    return "!" + format_expr(*static_cast<const NotExpr&>(expr).expr, indent);
+                    return "!" + result;
                 case UnaryExpr::Op::Addr:
-                    return "&" + format_expr(*static_cast<const AddrExpr&>(expr).expr, indent);
+                    return "&" + result;
                 case UnaryExpr::Op::Deref:
-                    return "*" + format_expr(*static_cast<const DerefExpr&>(expr).expr, indent);
+                    return "*" + result;
                 case UnaryExpr::Op::Try:
-                    return format_expr(*static_cast<const TryExpr&>(expr).expr, indent) + "?";
+                    return result + "?";
                 case UnaryExpr::Op::New:
-                    return "new " + format_expr(*static_cast<const NewExpr&>(expr).expr, indent);
+                    return "new " + result;
                 case UnaryExpr::Op::Index: {
                     const auto& e = static_cast<const IndexExpr&>(expr);
-                    std::string result = format_expr(*e.base, indent) + "[";
+                    result += "[";
                     for (size_t i = 0; i < e.indices.size(); ++i) {
                         if (i > 0) {
                             result += ", ";
@@ -339,7 +340,6 @@ std::string format_expr(const Expr& expr, int indent) {
                 }
                 case UnaryExpr::Op::Field: {
                     const auto& e = static_cast<const FieldExpr&>(expr);
-                    std::string result = format_expr(*e.base, indent);
                     for (const auto& p: e.path) {
                         result += "." + p;
                     }
@@ -348,7 +348,7 @@ std::string format_expr(const Expr& expr, int indent) {
                 }
                 case UnaryExpr::Op::Proj: {
                     const auto& e = static_cast<const ProjExpr&>(expr);
-                    return format_expr(*e.base, indent) + "." + std::to_string(e.index);
+                    return result + "." + std::to_string(e.index);
                 }
             }
             break;
