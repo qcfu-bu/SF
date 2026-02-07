@@ -340,9 +340,7 @@ std::string format_expr(const Expr& expr, int indent) {
                 }
                 case UnaryExpr::Op::Field: {
                     const auto& e = static_cast<const FieldExpr&>(expr);
-                    for (const auto& p: e.path) {
-                        result += "." + p;
-                    }
+                    result += "." + e.path;
                     result += format_type_args(e.type_args);
                     return result;
                 }
