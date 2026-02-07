@@ -314,12 +314,29 @@ std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
                 case parsing::UnaryExpr::Op::Neg:
                     return std::make_shared<NegExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::Not:
+                    return std::make_shared<NotExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::Addr:
+                    return std::make_shared<AddrExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::Deref:
+                    return std::make_shared<DerefExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::Try:
+                    return std::make_shared<TryExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::New:
-                case parsing::UnaryExpr::Op::Index:
+                    return std::make_shared<NewExpr>(std::move(operand), span);
+                case parsing::UnaryExpr::Op::Index: {
+                    const auto& index_expr = static_cast<const parsing::IndexExpr&>(unary_expr);
+                    std::vector<std::shared_ptr<Expr>> indices;
+                    for (const auto& index: index_expr.indices) {
+                        indices.push_back(elab_expr(*index));
+                    }
+                    return std::make_shared<IndexExpr>(
+                        std::move(operand),
+                        std::move(indices),
+                        span
+                    );
+                }
                 case parsing::UnaryExpr::Op::Dot:
+                    // TODO: handle field access and projection
                     break;
             }
         }
