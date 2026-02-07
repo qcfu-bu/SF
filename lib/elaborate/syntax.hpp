@@ -1,8 +1,6 @@
 #pragma once
 
 #include "parsing/syntax.hpp"
-#include <concepts>
-#include <memory>
 
 namespace elaborate {
 
@@ -179,8 +177,10 @@ struct Expr {
         Binary,
         Tuple,
         Hint,
-        Const,
         Var,
+        Func,
+        Ctor,
+        Init,
         Lam,
         App,
         Block,
@@ -805,24 +805,52 @@ struct HintExpr: public Expr {
         type(std::move(type)) {}
 };
 
-struct ConstExpr: public Expr {
-    std::string ident;
-    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
-
-    ConstExpr(
-        std::string ident,
-        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
-        Span span
-    ):
-        Expr(Kind::Const, span),
-        ident(std::move(ident)),
-        type_args(std::move(type_args)) {}
-};
-
 struct VarExpr: public Expr {
     std::string ident;
 
     VarExpr(std::string ident, Span span): Expr(Kind::Var, span), ident(std::move(ident)) {}
+};
+
+struct FuncExpr: public Expr {
+    std::string ident;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+
+    FuncExpr(
+        std::string ident,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
+        Span span
+    ):
+        Expr(Kind::Func, span),
+        ident(std::move(ident)),
+        type_args(std::move(type_args)) {}
+};
+
+struct CtorExpr: public Expr {
+    std::string ident;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+
+    CtorExpr(
+        std::string ident,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
+        Span span
+    ):
+        Expr(Kind::Ctor, span),
+        ident(std::move(ident)),
+        type_args(std::move(type_args)) {}
+};
+
+struct InitExpr: public Expr {
+    std::string ident;
+    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+
+    InitExpr(
+        std::string ident,
+        std::optional<std::vector<std::shared_ptr<Type>>> type_args,
+        Span span
+    ):
+        Expr(Kind::Init, span),
+        ident(std::move(ident)),
+        type_args(std::move(type_args)) {}
 };
 
 struct LamExpr: public Expr {

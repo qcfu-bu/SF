@@ -1,0 +1,5 @@
+// An interface in the surface language
+interface Functor {
+    type Self<A>;
+    func map<A,B>(x: Self<A>, f: A -> B) -> Self<B>;
+}

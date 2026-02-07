@@ -17,7 +17,6 @@
                     misc-homoglyph,
                     modernize-avoid-bind,
                     modernize-concat-nested-namespaces,
-                    modernize-loop-convert,
                     modernize-make-shared,
                     modernize-make-unique,
                     modernize-redundant-void-arg,
@@ -57,10 +56,6 @@
     # crbug.com/1402090: until we support C++20 everywhere, we shouldn't be
     # suggesting constructs that require C++20. Prefer base::Reversed.
     # TODO(crbug.com/1404958): remove these once C++20 is everywhere.
-    - key:          modernize-loop-convert.MakeReverseRangeFunction
-      value:        std::views::reverse
-    - key:          modernize-loop-convert.MakeReverseRangeHeader
-      value:        <ranges>
     - { key: readability-identifier-naming.ClassCase,           value: CamelCase  }
     - { key: readability-identifier-naming.StructCase,          value: CamelCase  }
     - { key: readability-identifier-naming.EnumCase,            value: CamelCase  }

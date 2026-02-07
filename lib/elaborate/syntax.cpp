@@ -447,8 +447,18 @@ std::string format_expr(const Expr& expr, int indent) {
             return "(" + format_expr(*e.expr, indent) + ": " + format_type(*e.type) + ")";
         }
 
-        case Expr::Kind::Const: {
-            const auto& e = static_cast<const ConstExpr&>(expr);
+        case Expr::Kind::Func: {
+            const auto& e = static_cast<const FuncExpr&>(expr);
+            return e.ident + format_type_args(e.type_args);
+        }
+
+        case Expr::Kind::Ctor: {
+            const auto& e = static_cast<const CtorExpr&>(expr);
+            return e.ident + format_type_args(e.type_args);
+        }
+
+        case Expr::Kind::Init: {
+            const auto& e = static_cast<const InitExpr&>(expr);
             return e.ident + format_type_args(e.type_args);
         }
 

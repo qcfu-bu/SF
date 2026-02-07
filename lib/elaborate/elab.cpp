@@ -1,8 +1,7 @@
-#include <functional>
 #include <memory>
 #include <optional>
 #include <ranges>
-#include <unordered_map>
+#include <variant>
 
 #include "elab.hpp"
 #include "elaborate/syntax.hpp"
@@ -265,7 +264,7 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
             auto sub_pat = elab_pat(*at_pat.pat);
             if (!at_pat.name.path.empty()) {
                 throw std::runtime_error(
-                    std::format("Invalid @pattern variable name: {}", at_pat.name)
+                    std::format("Invalid @pattern variable name {} at {}", pat, span)
                 );
             }
             return std::make_shared<AtPat>(
@@ -298,6 +297,33 @@ std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& cond) {
             );
         }
     }
+}
+
+std::shared_ptr<Expr> fold_dot_expr(
+    std::shared_ptr<Expr> expr,
+    const std::vector<std::variant<std::string, int>>& path,
+    const std::optional<std::vector<std::shared_ptr<Type>>> type_args,
+    const Span span
+) {
+    for (auto it = path.begin(); it != path.end(); ++it) {
+        if (const auto* ptr = std::get_if<int>(&*it)) {
+            if (it + 1 == path.end() && type_args.has_value()) {
+                throw std::runtime_error(
+                    std::format("Cannot apply type arguments to projection {} at {}", *expr, span)
+                );
+            }
+            expr = std::make_shared<ProjExpr>(std::move(expr), *ptr, span);
+        } else {
+            const auto& field_name = std::get<std::string>(*it);
+            expr = std::make_shared<FieldExpr>(
+                std::move(expr),
+                field_name,
+                std::move(type_args),
+                span
+            );
+        }
+    }
+    return expr;
 }
 
 std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
@@ -338,9 +364,22 @@ std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
                         span
                     );
                 }
-                case parsing::UnaryExpr::Op::Dot:
-                    // TODO: handle field access and projection
-                    break;
+                case parsing::UnaryExpr::Op::Dot: {
+                    const auto& dot_expr = static_cast<const parsing::DotExpr&>(unary_expr);
+                    std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+                    if (dot_expr.type_args.has_value()) {
+                        type_args = std::vector<std::shared_ptr<Type>> {};
+                        for (const auto& arg: *dot_expr.type_args) {
+                            type_args->push_back(elab_type(*arg));
+                        }
+                    }
+                    return fold_dot_expr(
+                        std::move(operand),
+                        dot_expr.path,
+                        std::move(type_args),
+                        span
+                    );
+                }
             }
         }
         case parsing::Expr::Kind::Binary: {
@@ -427,9 +466,59 @@ std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
                 }
             }
         }
-        case parsing::Expr::Kind::Tuple:
-        case parsing::Expr::Kind::Hint:
-        case parsing::Expr::Kind::Name:
+        case parsing::Expr::Kind::Tuple: {
+            auto& tuple_expr = static_cast<parsing::TupleExpr&>(expr);
+            std::vector<std::shared_ptr<Expr>> elems;
+            for (auto& elem: tuple_expr.elems) {
+                elems.push_back(elab_expr(*elem));
+            }
+            return std::make_shared<TupleExpr>(std::move(elems), span);
+        }
+        case parsing::Expr::Kind::Hint: {
+            auto& hint_expr = static_cast<parsing::HintExpr&>(expr);
+            auto elab_expr_ptr = elab_expr(*hint_expr.expr);
+            auto elab_type_ptr = elab_type(*hint_expr.type);
+            return std::make_shared<HintExpr>(
+                std::move(elab_expr_ptr),
+                std::move(elab_type_ptr),
+                span
+            );
+        }
+        case parsing::Expr::Kind::Name: {
+            auto& name_expr = static_cast<parsing::NameExpr&>(expr);
+            std::shared_ptr<Expr> result;
+            std::optional<std::vector<std::shared_ptr<Type>>> type_args;
+            if (name_expr.type_args.has_value()) {
+                type_args = std::vector<std::shared_ptr<Type>> {};
+                for (const auto& arg: *name_expr.type_args) {
+                    type_args->push_back(elab_type(*arg));
+                }
+            }
+            if (ctx.find_expr_var(name_expr.name.ident).has_value()) {
+                result = std::make_shared<VarExpr>(name_expr.name.ident, span);
+                return fold_dot_expr(result, name_expr.name.path, type_args, span);
+            }
+            auto [path, rest] = name_expr.name.slice();
+            auto symbol = table.find_expr_symbol(name_expr.name.ident, path);
+            switch (symbol.get_kind()) {
+                case Symbol::Kind::Var:
+                    result = std::make_shared<VarExpr>(symbol.get_path(), span);
+                    break;
+                case Symbol::Kind::Ctor:
+                    result = std::make_shared<CtorExpr>(symbol.get_path(), type_args, span);
+                    break;
+                case Symbol::Kind::Func:
+                    result = std::make_shared<FuncExpr>(symbol.get_path(), type_args, span);
+                    break;
+                case Symbol::Kind::Class:
+                case Symbol::Kind::Init:
+                    result = std::make_shared<InitExpr>(symbol.get_path(), type_args, span);
+                    break;
+                default: {
+                    throw std::runtime_error(std::format("Invalid expression {} at", expr, span));
+                }
+            }
+        }
         case parsing::Expr::Kind::Hole:
         case parsing::Expr::Kind::Lam:
         case parsing::Expr::Kind::App:
