@@ -355,105 +355,51 @@ std::string format_expr(const Expr& expr, int indent) {
         case Expr::Kind::Binary: {
             const auto& b = static_cast<const BinaryExpr&>(expr);
             std::string op;
-            const Expr* left = nullptr;
-            const Expr* right = nullptr;
+            const Expr* left = b.left.get();
+            const Expr* right = b.right.get();
 
             switch (b.get_op()) {
-                case BinaryExpr::Op::Add: {
-                    const auto& e = static_cast<const AddExpr&>(expr);
+                case BinaryExpr::Op::Add:
                     op = " + ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Sub: {
-                    const auto& e = static_cast<const SubExpr&>(expr);
+                case BinaryExpr::Op::Sub:
                     op = " - ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Mul: {
-                    const auto& e = static_cast<const MulExpr&>(expr);
+                case BinaryExpr::Op::Mul:
                     op = " * ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Div: {
-                    const auto& e = static_cast<const DivExpr&>(expr);
+                case BinaryExpr::Op::Div:
                     op = " / ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Mod: {
-                    const auto& e = static_cast<const ModExpr&>(expr);
+                case BinaryExpr::Op::Mod:
                     op = " % ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::And: {
-                    const auto& e = static_cast<const AndExpr&>(expr);
+                case BinaryExpr::Op::And:
                     op = " && ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Or: {
-                    const auto& e = static_cast<const OrExpr&>(expr);
+                case BinaryExpr::Op::Or:
                     op = " || ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Eq: {
-                    const auto& e = static_cast<const EqExpr&>(expr);
+                case BinaryExpr::Op::Eq:
                     op = " == ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Neq: {
-                    const auto& e = static_cast<const NeqExpr&>(expr);
+                case BinaryExpr::Op::Neq:
                     op = " != ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Lt: {
-                    const auto& e = static_cast<const LtExpr&>(expr);
+                case BinaryExpr::Op::Lt:
                     op = " < ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Gt: {
-                    const auto& e = static_cast<const GtExpr&>(expr);
+                case BinaryExpr::Op::Gt:
                     op = " > ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Lte: {
-                    const auto& e = static_cast<const LteExpr&>(expr);
+                case BinaryExpr::Op::Lte:
                     op = " <= ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Gte: {
-                    const auto& e = static_cast<const GteExpr&>(expr);
+                case BinaryExpr::Op::Gte:
                     op = " >= ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
                 case BinaryExpr::Op::Assign: {
                     const auto& e = static_cast<const AssignExpr&>(expr);
-                    left = e.left.get();
-                    right = e.right.get();
                     switch (e.mode) {
                         case BinaryExpr::Op::Assign:
                             op = " = ";
