@@ -1,8 +1,11 @@
+#include <functional>
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <unordered_map>
 
 #include "elab.hpp"
+#include "elaborate/syntax.hpp"
 #include "elaborate/table.hpp"
 #include "parsing/syntax.hpp"
 
@@ -340,7 +343,90 @@ std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
                     break;
             }
         }
-        case parsing::Expr::Kind::Binary:
+        case parsing::Expr::Kind::Binary: {
+            auto& binary_expr = static_cast<parsing::BinaryExpr&>(expr);
+            auto left = elab_expr(*binary_expr.left);
+            auto right = elab_expr(*binary_expr.right);
+            switch (binary_expr.get_op()) {
+                case parsing::BinaryExpr::Op::Add:
+                    return std::make_shared<AddExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Sub:
+                    return std::make_shared<SubExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Mul:
+                    return std::make_shared<MulExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Div:
+                    return std::make_shared<DivExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Mod:
+                    return std::make_shared<ModExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::And:
+                    return std::make_shared<AndExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Or:
+                    return std::make_shared<OrExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Eq:
+                    return std::make_shared<EqExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Neq:
+                    return std::make_shared<NeqExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Lt:
+                    return std::make_shared<LtExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Lte:
+                    return std::make_shared<LteExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Gt:
+                    return std::make_shared<GtExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Gte:
+                    return std::make_shared<GteExpr>(std::move(left), std::move(right), span);
+                case parsing::BinaryExpr::Op::Assign: {
+                    auto& assign_expr = static_cast<parsing::AssignExpr&>(binary_expr);
+                    switch (assign_expr.mode) {
+                        case parsing::BinaryExpr::Op::Add:
+                            return std::make_shared<AssignExpr>(
+                                BinaryExpr::Op::Add,
+                                std::move(left),
+                                std::move(right),
+                                span
+                            );
+                        case parsing::BinaryExpr::Op::Sub:
+                            return std::make_shared<AssignExpr>(
+                                BinaryExpr::Op::Sub,
+                                std::move(left),
+                                std::move(right),
+                                span
+                            );
+                        case parsing::BinaryExpr::Op::Mul:
+                            return std::make_shared<AssignExpr>(
+                                BinaryExpr::Op::Mul,
+                                std::move(left),
+                                std::move(right),
+                                span
+                            );
+                        case parsing::BinaryExpr::Op::Div:
+                            return std::make_shared<AssignExpr>(
+                                BinaryExpr::Op::Div,
+                                std::move(left),
+                                std::move(right),
+                                span
+                            );
+                        case parsing::BinaryExpr::Op::Mod:
+                            return std::make_shared<AssignExpr>(
+                                BinaryExpr::Op::Mod,
+                                std::move(left),
+                                std::move(right),
+                                span
+                            );
+                        case parsing::BinaryExpr::Op::Assign:
+                            return std::make_shared<AssignExpr>(
+                                BinaryExpr::Op::Assign,
+                                std::move(left),
+                                std::move(right),
+                                span
+                            );
+                        default:
+                            throw std::runtime_error(
+                                std::format("Invalid assignment operator {} at {}", expr, span)
+                            );
+                    }
+                }
+            }
+        }
         case parsing::Expr::Kind::Tuple:
         case parsing::Expr::Kind::Hint:
         case parsing::Expr::Kind::Name:
