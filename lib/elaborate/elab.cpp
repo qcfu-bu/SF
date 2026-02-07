@@ -309,4 +309,35 @@ std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& cond) {
     }
 }
 
+std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
+    switch (expr.get_kind()) {
+        case parsing::Expr::Kind::Lit: {
+            auto& lit_expr = static_cast<parsing::LitExpr&>(expr);
+            auto lit = elab_lit(*lit_expr.literal);
+            return std::make_shared<LitExpr>(std::move(lit), expr.get_span());
+        }
+        case parsing::Expr::Kind::Unary: {
+            auto& unary_expr = static_cast<parsing::UnaryExpr&>(expr);
+            auto expr = elab_expr(*unary_expr.expr);
+        }
+        case parsing::Expr::Kind::Binary:
+        case parsing::Expr::Kind::Tuple:
+        case parsing::Expr::Kind::Hint:
+        case parsing::Expr::Kind::Name:
+        case parsing::Expr::Kind::Hole:
+        case parsing::Expr::Kind::Lam:
+        case parsing::Expr::Kind::App:
+        case parsing::Expr::Kind::Block:
+        case parsing::Expr::Kind::Ite:
+        case parsing::Expr::Kind::Switch:
+        case parsing::Expr::Kind::For:
+        case parsing::Expr::Kind::While:
+        case parsing::Expr::Kind::Loop:
+        case parsing::Expr::Kind::Break:
+        case parsing::Expr::Kind::Continue:
+        case parsing::Expr::Kind::Return:
+            break;
+    }
+}
+
 } // namespace elaborate

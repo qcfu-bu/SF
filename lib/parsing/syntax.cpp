@@ -322,24 +322,25 @@ std::string format_expr(const Expr& expr, int indent) {
 
         case Expr::Kind::Unary: {
             const auto& u = static_cast<const UnaryExpr&>(expr);
+            auto result = format_expr(*u.expr, indent);
             switch (u.get_op()) {
                 case UnaryExpr::Op::Pos:
-                    return "+" + format_expr(*static_cast<const PosExpr&>(expr).expr, indent);
+                    return "+" + result;
                 case UnaryExpr::Op::Neg:
-                    return "-" + format_expr(*static_cast<const NegExpr&>(expr).expr, indent);
+                    return "-" + result;
                 case UnaryExpr::Op::Not:
-                    return "!" + format_expr(*static_cast<const NotExpr&>(expr).expr, indent);
+                    return "!" + result;
                 case UnaryExpr::Op::Addr:
-                    return "&" + format_expr(*static_cast<const AddrExpr&>(expr).expr, indent);
+                    return "&" + result;
                 case UnaryExpr::Op::Deref:
-                    return "*" + format_expr(*static_cast<const DerefExpr&>(expr).expr, indent);
+                    return "*" + result;
                 case UnaryExpr::Op::Try:
-                    return format_expr(*static_cast<const TryExpr&>(expr).expr, indent) + "?";
+                    return result + "?";
                 case UnaryExpr::Op::New:
-                    return "new " + format_expr(*static_cast<const NewExpr&>(expr).expr, indent);
+                    return "new " + result;
                 case UnaryExpr::Op::Index: {
                     const auto& e = static_cast<const IndexExpr&>(expr);
-                    std::string result = format_expr(*e.base, indent) + "[";
+                    result += "[";
                     for (size_t i = 0; i < e.indices.size(); ++i) {
                         if (i > 0) {
                             result += ", ";
@@ -351,7 +352,6 @@ std::string format_expr(const Expr& expr, int indent) {
                 }
                 case UnaryExpr::Op::Dot: {
                     const auto& e = static_cast<const DotExpr&>(expr);
-                    std::string result = format_expr(*e.base, indent);
                     for (const auto& p: e.path) {
                         if (const auto* ptr = std::get_if<int>(&p)) {
                             result += "." + std::to_string(*ptr);
@@ -369,105 +369,51 @@ std::string format_expr(const Expr& expr, int indent) {
         case Expr::Kind::Binary: {
             const auto& b = static_cast<const BinaryExpr&>(expr);
             std::string op;
-            const Expr* left = nullptr;
-            const Expr* right = nullptr;
+            const Expr* left = b.left.get();
+            const Expr* right = b.right.get();
 
             switch (b.get_op()) {
-                case BinaryExpr::Op::Add: {
-                    const auto& e = static_cast<const AddExpr&>(expr);
+                case BinaryExpr::Op::Add:
                     op = " + ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Sub: {
-                    const auto& e = static_cast<const SubExpr&>(expr);
+                case BinaryExpr::Op::Sub:
                     op = " - ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Mul: {
-                    const auto& e = static_cast<const MulExpr&>(expr);
+                case BinaryExpr::Op::Mul:
                     op = " * ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Div: {
-                    const auto& e = static_cast<const DivExpr&>(expr);
+                case BinaryExpr::Op::Div:
                     op = " / ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Mod: {
-                    const auto& e = static_cast<const ModExpr&>(expr);
+                case BinaryExpr::Op::Mod:
                     op = " % ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::And: {
-                    const auto& e = static_cast<const AndExpr&>(expr);
+                case BinaryExpr::Op::And:
                     op = " && ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Or: {
-                    const auto& e = static_cast<const OrExpr&>(expr);
+                case BinaryExpr::Op::Or:
                     op = " || ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Eq: {
-                    const auto& e = static_cast<const EqExpr&>(expr);
+                case BinaryExpr::Op::Eq:
                     op = " == ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Neq: {
-                    const auto& e = static_cast<const NeqExpr&>(expr);
+                case BinaryExpr::Op::Neq:
                     op = " != ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Lt: {
-                    const auto& e = static_cast<const LtExpr&>(expr);
+                case BinaryExpr::Op::Lt:
                     op = " < ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Gt: {
-                    const auto& e = static_cast<const GtExpr&>(expr);
+                case BinaryExpr::Op::Gt:
                     op = " > ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Lte: {
-                    const auto& e = static_cast<const LteExpr&>(expr);
+                case BinaryExpr::Op::Lte:
                     op = " <= ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
-                case BinaryExpr::Op::Gte: {
-                    const auto& e = static_cast<const GteExpr&>(expr);
+                case BinaryExpr::Op::Gte:
                     op = " >= ";
-                    left = e.left.get();
-                    right = e.right.get();
                     break;
-                }
                 case BinaryExpr::Op::Assign: {
                     const auto& e = static_cast<const AssignExpr&>(expr);
-                    left = e.left.get();
-                    right = e.right.get();
                     switch (e.mode) {
                         case BinaryExpr::Op::Assign:
                             op = " = ";

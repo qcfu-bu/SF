@@ -577,7 +577,12 @@ struct UnaryExpr: public Expr {
         Dot,   // .
     };
 
-    UnaryExpr(Op op, Span span): Expr(Kind::Unary, span), op(op) {}
+    std::unique_ptr<Expr> expr;
+
+    UnaryExpr(Op op, std::unique_ptr<Expr> expr, Span span):
+        Expr(Kind::Unary, span),
+        op(op),
+        expr(std::move(expr)) {}
 
     Op get_op() const {
         return op;
@@ -588,73 +593,42 @@ private:
 };
 
 struct PosExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    PosExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::Pos, span),
-        expr(std::move(expr)) {}
+    PosExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::Pos, std::move(expr), span) {}
 };
 
 struct NegExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    NegExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::Neg, span),
-        expr(std::move(expr)) {}
+    NegExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::Neg, std::move(expr), span) {}
 };
 
 struct NotExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    NotExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::Not, span),
-        expr(std::move(expr)) {}
+    NotExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::Not, std::move(expr), span) {}
 };
 
 struct AddrExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    AddrExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::Addr, span),
-        expr(std::move(expr)) {}
+    AddrExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::Addr, std::move(expr), span) {}
 };
 
 struct DerefExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    DerefExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::Deref, span),
-        expr(std::move(expr)) {}
+    DerefExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::Deref, std::move(expr), span) {}
 };
 
 struct TryExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    TryExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::Try, span),
-        expr(std::move(expr)) {}
+    TryExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::Try, std::move(expr), span) {}
 };
 
 struct NewExpr: public UnaryExpr {
-    std::unique_ptr<Expr> expr;
-
-    NewExpr(std::unique_ptr<Expr> expr, Span span):
-        UnaryExpr(Op::New, span),
-        expr(std::move(expr)) {}
+    NewExpr(std::unique_ptr<Expr> expr, Span span): UnaryExpr(Op::New, std::move(expr), span) {}
 };
 
 struct IndexExpr: public UnaryExpr {
-    std::unique_ptr<Expr> base;
     std::vector<std::unique_ptr<Expr>> indices;
 
     IndexExpr(std::unique_ptr<Expr> base, std::vector<std::unique_ptr<Expr>> indices, Span span):
-        UnaryExpr(Op::Index, span),
-        base(std::move(base)),
+        UnaryExpr(Op::Index, std::move(base), span),
         indices(std::move(indices)) {}
 };
 
 struct DotExpr: public UnaryExpr {
-    std::unique_ptr<Expr> base;
     std::vector<Name::Seg> path;
     std::optional<std::vector<std::unique_ptr<Type>>> type_args;
 
@@ -664,8 +638,7 @@ struct DotExpr: public UnaryExpr {
         std::optional<std::vector<std::unique_ptr<Type>>> type_args,
         Span span
     ):
-        UnaryExpr(Op::Dot, span),
-        base(std::move(base)),
+        UnaryExpr(Op::Dot, std::move(base), span),
         path(std::move(path)),
         type_args(std::move(type_args)) {}
 };
@@ -688,7 +661,14 @@ struct BinaryExpr: public Expr {
         Assign, // =
     };
 
-    BinaryExpr(Op op, Span span): Expr(Kind::Binary, span), op(op) {}
+    std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> right;
+
+    BinaryExpr(Op op, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
+        Expr(Kind::Binary, span),
+        op(op),
+        left(std::move(left)),
+        right(std::move(right)) {}
 
     Op get_op() const {
         return op;
@@ -699,151 +679,80 @@ private:
 };
 
 struct AddExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     AddExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Add, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Add, std::move(left), std::move(right), span) {}
 };
 
 struct SubExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     SubExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Sub, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Sub, std::move(left), std::move(right), span) {}
 };
 
 struct MulExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     MulExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Mul, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Mul, std::move(left), std::move(right), span) {}
 };
 
 struct DivExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     DivExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Div, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Div, std::move(left), std::move(right), span) {}
 };
 
 struct ModExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     ModExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Mod, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Mod, std::move(left), std::move(right), span) {}
 };
 
 struct AndExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     AndExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::And, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::And, std::move(left), std::move(right), span) {}
 };
 
 struct OrExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     OrExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Or, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Or, std::move(left), std::move(right), span) {}
 };
 
 struct EqExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     EqExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Eq, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Eq, std::move(left), std::move(right), span) {}
 };
 
 struct NeqExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     NeqExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Neq, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Neq, std::move(left), std::move(right), span) {}
 };
 
 struct LtExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     LtExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Lt, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Lt, std::move(left), std::move(right), span) {}
 };
 
 struct GtExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     GtExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Gt, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Gt, std::move(left), std::move(right), span) {}
 };
 
 struct LteExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     LteExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Lte, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Lte, std::move(left), std::move(right), span) {}
 };
 
 struct GteExpr: public BinaryExpr {
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
     GteExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Gte, span),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Gte, std::move(left), std::move(right), span) {}
 };
 
 struct AssignExpr: public BinaryExpr {
     BinaryExpr::Op mode;
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
 
     AssignExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Assign, span),
-        mode(Op::Assign),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Assign, std::move(left), std::move(right), span),
+        mode(Op::Assign) {}
 
     AssignExpr(Op mode, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Span span):
-        BinaryExpr(Op::Assign, span),
-        mode(mode),
-        left(std::move(left)),
-        right(std::move(right)) {}
+        BinaryExpr(Op::Assign, std::move(left), std::move(right), span),
+        mode(mode) {}
 };
 
 struct TupleExpr: public Expr {

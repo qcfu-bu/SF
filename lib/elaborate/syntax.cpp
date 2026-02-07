@@ -49,6 +49,10 @@ std::string format_type(const Type& type) {
             return "String";
         case Type::Kind::Unit:
             return "()";
+        case Type::Kind::Var: {
+            const auto& t = static_cast<const VarType&>(type);
+            return t.ident;
+        }
         case Type::Kind::Enum: {
             const auto& t = static_cast<const EnumType&>(type);
             return t.ident + format_type_args(t.type_args);
