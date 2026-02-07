@@ -653,12 +653,12 @@ struct IndexExpr: public UnaryExpr {
 };
 
 struct FieldExpr: public UnaryExpr {
-    std::vector<std::string> path;
+    std::string path;
     std::optional<std::vector<std::shared_ptr<Type>>> type_args;
 
     FieldExpr(
         std::shared_ptr<Expr> base,
-        std::vector<std::string> path,
+        std::string path,
         std::optional<std::vector<std::shared_ptr<Type>>> type_args,
         Span span
     ):
@@ -789,6 +789,7 @@ struct AssignExpr: public BinaryExpr {
 
 struct TupleExpr: public Expr {
     std::vector<std::shared_ptr<Expr>> elems;
+
     explicit TupleExpr(std::vector<std::shared_ptr<Expr>> elems, Span span):
         Expr(Expr::Kind::Tuple, span),
         elems(std::move(elems)) {}
@@ -797,6 +798,7 @@ struct TupleExpr: public Expr {
 struct HintExpr: public Expr {
     std::shared_ptr<Expr> expr;
     std::shared_ptr<Type> type;
+
     HintExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Type> type, Span span):
         Expr(Expr::Kind::Hint, span),
         expr(std::move(expr)),
