@@ -94,19 +94,20 @@ void Context::pat_add_vars(const elaborate::Pat& pat) {
 }
 
 std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
+    auto span = type.get_span();
     switch (type.get_kind()) {
         case parsing::Type::Kind::Meta:
-            return std::make_shared<MetaType>(type.get_span());
+            return std::make_shared<MetaType>(span);
         case parsing::Type::Kind::Int:
-            return std::make_shared<IntType>(type.get_span());
+            return std::make_shared<IntType>(span);
         case parsing::Type::Kind::Bool:
-            return std::make_shared<BoolType>(type.get_span());
+            return std::make_shared<BoolType>(span);
         case parsing::Type::Kind::Char:
-            return std::make_shared<CharType>(type.get_span());
+            return std::make_shared<CharType>(span);
         case parsing::Type::Kind::String:
-            return std::make_shared<StringType>(type.get_span());
+            return std::make_shared<StringType>(span);
         case parsing::Type::Kind::Unit:
-            return std::make_shared<UnitType>(type.get_span());
+            return std::make_shared<UnitType>(span);
         case parsing::Type::Kind::Name: {
             auto& name_type = static_cast<parsing::NameType&>(type);
             auto [path, rest] = name_type.name.slice();
@@ -115,7 +116,7 @@ std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
             }
             if (path.empty() && !name_type.type_args && ctx.has_type_var(name_type.name.ident)) {
                 // type variable
-                return std::make_shared<VarType>(name_type.name.ident, type.get_span());
+                return std::make_shared<VarType>(name_type.name.ident, span);
             }
             // otherwise, resolve as type constant
             auto symbol = table.find_type_symbol(name_type.name.ident, path);
@@ -127,25 +128,13 @@ std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
                 }
             }
             if (symbol.get_kind() == Symbol::Kind::Enum) {
-                return std::make_shared<EnumType>(name_type.name.ident, type_args, type.get_span());
+                return std::make_shared<EnumType>(name_type.name.ident, type_args, span);
             } else if (symbol.get_kind() == Symbol::Kind::Class) {
-                return std::make_shared<ClassType>(
-                    name_type.name.ident,
-                    type_args,
-                    type.get_span()
-                );
+                return std::make_shared<ClassType>(name_type.name.ident, type_args, span);
             } else if (symbol.get_kind() == Symbol::Kind::Typealias) {
-                return std::make_shared<TypealiasType>(
-                    name_type.name.ident,
-                    type_args,
-                    type.get_span()
-                );
+                return std::make_shared<TypealiasType>(name_type.name.ident, type_args, span);
             } else if (symbol.get_kind() == Symbol::Kind::Interface) {
-                return std::make_shared<InterfaceType>(
-                    name_type.name.ident,
-                    type_args,
-                    type.get_span()
-                );
+                return std::make_shared<InterfaceType>(name_type.name.ident, type_args, span);
             } else {
                 throw std::runtime_error(std::format("Invalid type: {}", name_type.name));
             }
@@ -156,7 +145,7 @@ std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
             for (auto& elem: tuple_type.elems) {
                 elem_types.push_back(elab_type(*elem));
             }
-            return std::make_shared<TupleType>(std::move(elem_types), type.get_span());
+            return std::make_shared<TupleType>(std::move(elem_types), span);
         }
         case parsing::Type::Kind::Arrow: {
             auto& arrow_type = static_cast<parsing::ArrowType&>(type);
@@ -165,44 +154,42 @@ std::shared_ptr<Type> Elaborator::elab_type(parsing::Type& type) {
                 inputs.push_back(elab_type(*input));
             }
             auto output = elab_type(*arrow_type.output);
-            return std::make_shared<ArrowType>(
-                std::move(inputs),
-                std::move(output),
-                type.get_span()
-            );
+            return std::make_shared<ArrowType>(std::move(inputs), std::move(output), span);
         }
     }
 }
 
 std::shared_ptr<Lit> Elaborator::elab_lit(parsing::Lit& lit) {
+    auto span = lit.get_span();
     switch (lit.get_kind()) {
         case parsing::Lit::Kind::Unit:
-            return std::make_shared<UnitLit>(lit.get_span());
+            return std::make_shared<UnitLit>(span);
         case parsing::Lit::Kind::Int: {
             auto& int_lit = static_cast<parsing::IntLit&>(lit);
-            return std::make_shared<IntLit>(int_lit.value, lit.get_span());
+            return std::make_shared<IntLit>(int_lit.value, span);
         }
         case parsing::Lit::Kind::Bool: {
             auto& bool_lit = static_cast<parsing::BoolLit&>(lit);
-            return std::make_shared<BoolLit>(bool_lit.value, lit.get_span());
+            return std::make_shared<BoolLit>(bool_lit.value, span);
         }
         case parsing::Lit::Kind::Char: {
             auto& char_lit = static_cast<parsing::CharLit&>(lit);
-            return std::make_shared<CharLit>(char_lit.value, lit.get_span());
+            return std::make_shared<CharLit>(char_lit.value, span);
         }
         case parsing::Lit::Kind::String: {
             auto& string_lit = static_cast<parsing::StringLit&>(lit);
-            return std::make_shared<StringLit>(string_lit.value, lit.get_span());
+            return std::make_shared<StringLit>(string_lit.value, span);
         }
     }
 }
 
 std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
+    auto span = pat.get_span();
     switch (pat.get_kind()) {
         case parsing::Pat::Kind::Lit: {
             auto& lit_pat = static_cast<parsing::LitPat&>(pat);
             auto lit = elab_lit(*lit_pat.literal);
-            return std::make_shared<LitPat>(std::move(lit), pat.get_span());
+            return std::make_shared<LitPat>(std::move(lit), span);
         }
         case parsing::Pat::Kind::Tuple: {
             auto& tuple_pat = static_cast<parsing::TuplePat&>(pat);
@@ -210,7 +197,7 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
             for (auto& elem: tuple_pat.elems) {
                 elems.push_back(elab_pat(*elem));
             }
-            return std::make_shared<TuplePat>(std::move(elems), pat.get_span());
+            return std::make_shared<TuplePat>(std::move(elems), span);
         }
         case parsing::Pat::Kind::Ctor: {
             auto& ctor_pat = static_cast<parsing::CtorPat&>(pat);
@@ -244,7 +231,7 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
                 symbol.get_path(),
                 std::move(type_args),
                 std::move(args),
-                pat.get_span()
+                span
             );
         }
         case parsing::Pat::Kind::Name: {
@@ -254,12 +241,12 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
                 name_pat.name.ident,
                 std::move(hint),
                 name_pat.is_mut,
-                pat.get_span()
+                span
             );
         }
         case parsing::Pat::Kind::Wild: {
             auto& wild_pat = static_cast<parsing::WildPat&>(pat);
-            return std::make_shared<WildPat>(pat.get_span());
+            return std::make_shared<WildPat>(span);
         }
         case parsing::Pat::Kind::Or: {
             auto& or_pat = static_cast<parsing::OrPat&>(pat);
@@ -267,7 +254,7 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
             for (auto& option: or_pat.options) {
                 options.push_back(elab_pat(*option));
             }
-            return std::make_shared<OrPat>(std::move(options), pat.get_span());
+            return std::make_shared<OrPat>(std::move(options), span);
         }
         case parsing::Pat::Kind::At: {
             auto& at_pat = static_cast<parsing::AtPat&>(pat);
@@ -283,18 +270,19 @@ std::shared_ptr<Pat> Elaborator::elab_pat(parsing::Pat& pat) {
                 std::move(hint),
                 at_pat.is_mut,
                 std::move(sub_pat),
-                pat.get_span()
+                span
             );
         }
     }
 }
 
 std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& cond) {
+    auto span = cond.get_span();
     switch (cond.get_kind()) {
         case parsing::Cond::Kind::Expr: {
             auto& expr_cond = static_cast<parsing::ExprCond&>(cond);
             auto elab_expr_ptr = elab_expr(*expr_cond.expr);
-            return std::make_shared<ExprCond>(std::move(elab_expr_ptr), cond.get_span());
+            return std::make_shared<ExprCond>(std::move(elab_expr_ptr), span);
         }
         case parsing::Cond::Kind::Case: {
             auto& pat_cond = static_cast<parsing::PatCond&>(cond);
@@ -303,30 +291,28 @@ std::shared_ptr<Cond> Elaborator::elab_cond(parsing::Cond& cond) {
             return std::make_shared<PatCond>(
                 std::move(elab_pat_ptr),
                 std::move(elab_expr_ptr),
-                cond.get_span()
+                span
             );
         }
     }
 }
 
 std::shared_ptr<Expr> Elaborator::elab_expr(parsing::Expr& expr) {
+    auto span = expr.get_span();
     switch (expr.get_kind()) {
         case parsing::Expr::Kind::Lit: {
             auto& lit_expr = static_cast<parsing::LitExpr&>(expr);
             auto lit = elab_lit(*lit_expr.literal);
-            return std::make_shared<LitExpr>(std::move(lit), expr.get_span());
+            return std::make_shared<LitExpr>(std::move(lit), span);
         }
         case parsing::Expr::Kind::Unary: {
             auto& unary_expr = static_cast<parsing::UnaryExpr&>(expr);
-            auto expr = elab_expr(*unary_expr.expr);
+            auto operand = elab_expr(*unary_expr.expr);
             switch (unary_expr.get_op()) {
                 case parsing::UnaryExpr::Op::Pos:
-                    return std::make_shared<UnaryExpr>(
-                        UnaryExpr::Op::Pos,
-                        std::move(expr),
-                        expr.get()->get_span()
-                    );
+                    return std::make_shared<PosExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::Neg:
+                    return std::make_shared<NegExpr>(std::move(operand), span);
                 case parsing::UnaryExpr::Op::Not:
                 case parsing::UnaryExpr::Op::Addr:
                 case parsing::UnaryExpr::Op::Deref:
